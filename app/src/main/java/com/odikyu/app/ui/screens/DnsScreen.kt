@@ -64,8 +64,8 @@ import kotlinx.coroutines.withContext
 private enum class DohStatus { Off, Checking, Protected, Failed }
 
 private const val PREFS_NAME = "odikyu_settings"
-private const val PREF_DNS_ENABLED = "cloudflare_doh_enabled"
-private const val CLOUDFLARE_DOH_URL = "https://1.1.1.1/dns-query"
+private const val PREF_DNS_ENABLED = "doh_enabled"
+private const val DOH_URL = "https://dns.odikyu.tech/dns-query"
 
 /** Friendly green used for the "protected" state, independent of the dynamic theme. */
 private val ProtectedGreen = Color(0xFF2FBF71)
@@ -314,7 +314,7 @@ private fun StatusPill(status: DohStatus) {
 /** Verifies protection end-to-end with a real encrypted lookup (result never shown as a URL). */
 private suspend fun verifyProtection(): Boolean = withContext(Dispatchers.IO) {
     try {
-        val connection = URL(CLOUDFLARE_DOH_URL).openConnection() as HttpsURLConnection
+        val connection = URL(DOH_URL).openConnection() as HttpsURLConnection
         connection.requestMethod = "POST"
         connection.connectTimeout = 5_000
         connection.readTimeout = 5_000
