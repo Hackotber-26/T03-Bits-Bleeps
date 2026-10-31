@@ -1,24 +1,31 @@
 package com.odikyu.app.ui.screens
 
 import android.content.Context
-import android.content.SharedPreferences
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,9 +36,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
@@ -44,7 +59,10 @@ private const val PREFS_NAME = "odikyu_settings"
 private const val PREF_DNS_ENABLED = "cloudflare_doh_enabled"
 private const val CLOUDFLARE_DOH_URL = "https://1.1.1.1/dns-query"
 
-/** Wire-format DNS query for the A record of example.com, used to verify DoH connectivity. */
+/** Friendly green used for the "protected" state, independent of the dynamic theme. */
+private val ProtectedGreen = Color(0xFF2FBF71)
+
+/** Wire-format DNS query for the A record of example.com, used to verify connectivity. */
 private val PROBE_QUERY = byteArrayOf(
     0x00, 0x00, 0x01, 0x00, // header: id, recursion desired
     0x00, 0x01, 0x00, 0x00, // question count = 1
@@ -54,6 +72,10 @@ private val PROBE_QUERY = byteArrayOf(
     0x00, 0x01, 0x00, 0x01, // type A, class IN
 )
 
+/**
+ * Protection screen: a big friendly ON/OFF switch (no technical jargon) that toggles the
+ * encrypted-lookup protection and verifies it end-to-end.
+ */
 @Composable
 fun DnsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -64,135 +86,216 @@ fun DnsScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(enabled) {
         status = if (enabled) DohStatus.Checking else DohStatus.Off
         if (enabled) {
-            val ok = resolveViaCloudflare()
+            val ok = verifyProtection()
             status = if (ok) DohStatus.Protected else DohStatus.Failed
         }
     }
 
+    // Optimistic: the knob follows the user's intent immediately, even while verifying.
+    val toggleOn = status != DohStatus.Off
+    val busy = status == DohStatus.Checking
+
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(
-            imageVector = Icons.Filled.Lock,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .padding(top = 24.dp)
-                .size(56.dp),
-        )
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = "DNS Protection",
-            style = MaterialTheme.typography.headlineSmall,
+            text = "Protection",
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 12.dp),
         )
+        Spacer(Modifier.height(6.dp))
         Text(
-            text = "Scam lookups and phishing domains get resolved over encrypted Cloudflare DNS before they can reach you.",
+            text = "Stops scam and phishing sites before they load on your phone.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
+            textAlign = TextAlign.Center,
         )
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainer
-            ),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Cloudflare 1.1.1.1",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = "DNS over HTTPS (DoH)",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Switch(
-                    checked = enabled,
-                    onCheckedChange = { on ->
-                        enabled = on
-                        prefs.edit().putBoolean(PREF_DNS_ENABLED, on).apply()
-                    },
-                )
-            }
+        Spacer(Modifier.weight(1f))
+
+        ToggleRings(active = toggleOn) {
+            ProtectionToggle(
+                checked = toggleOn,
+                enabled = !busy,
+                onToggle = {
+                    val next = !enabled
+                    enabled = next
+                    prefs.edit().putBoolean(PREF_DNS_ENABLED, next).apply()
+                },
+            )
         }
 
-        StatusCard(status = status, modifier = Modifier.padding(top = 12.dp))
+        Spacer(Modifier.height(32.dp))
 
         Text(
-            text = "Endpoint: $CLOUDFLARE_DOH_URL",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 16.dp),
+            text = when (status) {
+                DohStatus.Protected -> "Your browsing is protected"
+                DohStatus.Off -> "Protection is off"
+                DohStatus.Checking -> "Turning on protection…"
+                DohStatus.Failed -> "Couldn't turn on protection"
+            },
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = when (status) {
+                DohStatus.Protected -> ProtectedGreen
+                DohStatus.Failed -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+            textAlign = TextAlign.Center,
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        StatusPill(status = status)
+
+        Spacer(Modifier.weight(1.2f))
+    }
+}
+
+/** Concentric dashed rings + floating dots behind the toggle, echoing the reference design. */
+@Composable
+private fun ToggleRings(
+    active: Boolean,
+    content: @Composable () -> Unit,
+) {
+    val ringColor = if (active) ProtectedGreen else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Box(
+        modifier = Modifier.size(300.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val c = center
+            drawCircle(
+                color = ringColor.copy(alpha = 0.10f),
+                radius = 140.dp.toPx(),
+                style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round),
+            )
+            drawCircle(
+                color = ringColor.copy(alpha = 0.45f),
+                radius = 118.dp.toPx(),
+                style = Stroke(
+                    width = 2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(
+                        floatArrayOf(6.dp.toPx(), 14.dp.toPx()),
+                    ),
+                ),
+            )
+            drawCircle(
+                color = ringColor.copy(alpha = 0.16f),
+                radius = 96.dp.toPx(),
+                style = Stroke(width = 1.5.dp.toPx()),
+            )
+            // Little floating dots on the outer ring.
+            listOf(-40f, 25f, 130f, 205f, 300f).forEach { degrees ->
+                val rad = Math.toRadians(degrees.toDouble())
+                drawCircle(
+                    color = ringColor.copy(alpha = 0.6f),
+                    radius = 3.dp.toPx(),
+                    center = Offset(
+                        c.x + (140.dp.toPx() * kotlin.math.cos(rad)).toFloat(),
+                        c.y + (140.dp.toPx() * kotlin.math.sin(rad)).toFloat(),
+                    ),
+                )
+            }
+            // Empty center wash so the toggle sits on a soft disc.
+            drawCircle(color = ringColor.copy(alpha = 0.07f), radius = 84.dp.toPx())
+        }
+        content()
+    }
+}
+
+/** Big ON/OFF switch with an animated knob. */
+@Composable
+private fun ProtectionToggle(
+    checked: Boolean,
+    enabled: Boolean,
+    onToggle: () -> Unit,
+) {
+    val knobPos by animateFloatAsState(targetValue = if (checked) 1f else 0f, label = "knob")
+    val trackColor = if (checked) ProtectedGreen else MaterialTheme.colorScheme.surfaceContainerHighest
+    val onTrack = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+
+    Box(
+        modifier = Modifier
+            .width(152.dp)
+            .height(72.dp)
+            .clip(RoundedCornerShape(36.dp))
+            .background(trackColor)
+            .clickable(enabled = enabled, onClick = onToggle),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = if (checked) "ON" else "OFF",
+            color = if (checked) Color.White else onTrack,
+            fontWeight = FontWeight.Bold,
+            fontSize = 15.sp,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier
+                .align(if (checked) Alignment.CenterStart else Alignment.CenterEnd)
+                .padding(horizontal = 24.dp),
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(x = 8.dp + 80.dp * knobPos)
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(Color.White),
         )
     }
 }
 
+/** Rounded status pill under the headline. */
 @Composable
-private fun StatusCard(status: DohStatus, modifier: Modifier = Modifier) {
-    val (containerColor, contentColor) = when (status) {
-        DohStatus.Protected ->
-            MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
-        DohStatus.Failed ->
-            MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        DohStatus.Off, DohStatus.Checking ->
-            MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurface
+private fun StatusPill(status: DohStatus) {
+    val (container, content) = when (status) {
+        DohStatus.Protected -> ProtectedGreen.copy(alpha = 0.16f) to ProtectedGreen
+        DohStatus.Failed -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+        else -> MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-    ) {
+    Surface(color = container, contentColor = content, shape = RoundedCornerShape(50)) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             when (status) {
-                DohStatus.Protected -> Icon(Icons.Filled.CheckCircle, contentDescription = null)
-                DohStatus.Failed -> Icon(Icons.Filled.Warning, contentDescription = null)
                 DohStatus.Checking -> CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 3.dp,
+                    modifier = Modifier.size(14.dp),
+                    strokeWidth = 2.dp,
+                    color = content,
                 )
-                DohStatus.Off -> Icon(Icons.Filled.Lock, contentDescription = null)
+                DohStatus.Protected -> Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
+                DohStatus.Failed -> Icon(Icons.Filled.Warning, null, Modifier.size(16.dp))
+                DohStatus.Off -> Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(content),
+                )
             }
             Text(
                 text = when (status) {
-                    DohStatus.Off -> "Unprotected — your DNS queries travel in the clear."
-                    DohStatus.Checking -> "Checking connection to 1.1.1.1…"
-                    DohStatus.Protected -> "Protected — encrypted DNS to 1.1.1.1 verified."
-                    DohStatus.Failed -> "Could not reach 1.1.1.1 over HTTPS. Check your connection."
+                    DohStatus.Protected -> "You're safe to browse"
+                    DohStatus.Off -> "Flip the switch to get protected"
+                    DohStatus.Checking -> "Checking your connection…"
+                    DohStatus.Failed -> "Check your internet and try again"
                 },
                 style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
             )
         }
     }
 }
 
-/** Posts a DNS wire-format query to Cloudflare's DoH endpoint; success means 1.1.1.1 over HTTPS works. */
-private suspend fun resolveViaCloudflare(): Boolean = withContext(Dispatchers.IO) {
+/** Verifies protection end-to-end with a real encrypted lookup (result never shown as a URL). */
+private suspend fun verifyProtection(): Boolean = withContext(Dispatchers.IO) {
     try {
         val connection = URL(CLOUDFLARE_DOH_URL).openConnection() as HttpsURLConnection
         connection.requestMethod = "POST"
