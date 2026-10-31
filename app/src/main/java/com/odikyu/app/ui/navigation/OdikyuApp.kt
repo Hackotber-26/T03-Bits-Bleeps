@@ -3,6 +3,7 @@ package com.odikyu.app.ui.navigation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -55,6 +56,9 @@ fun OdikyuApp(
 
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.background,
+                // The Scaffold's innerPadding already lifts content above the system nav bar;
+                // letting the bar add its own inset again would leave a dead gap below it.
+                windowInsets = WindowInsets(0, 0, 0, 0),
             ) {
                 OdikyuTab.entries.forEach { tab ->
                     NavigationBarItem(
