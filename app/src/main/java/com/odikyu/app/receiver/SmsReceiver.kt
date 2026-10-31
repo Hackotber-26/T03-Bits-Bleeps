@@ -51,6 +51,7 @@ class SmsReceiver : BroadcastReceiver() {
                 timestamp = System.currentTimeMillis(),
                 isOutgoing = false,
                 providerId = providerId,
+                read = false,
             )
         )
     }

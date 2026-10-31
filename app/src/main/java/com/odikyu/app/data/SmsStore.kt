@@ -98,6 +98,7 @@ object SmsStore {
             Telephony.Sms.BODY,
             Telephony.Sms.DATE,
             Telephony.Sms.TYPE,
+            Telephony.Sms.READ,
         )
         context.contentResolver.query(
             Telephony.Sms.CONTENT_URI,
@@ -114,6 +115,7 @@ object SmsStore {
             val bodyCol = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
             val dateCol = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
             val typeCol = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
+            val readCol = cursor.getColumnIndexOrThrow(Telephony.Sms.READ)
 
             buildList {
                 while (cursor.moveToNext()) {
@@ -126,6 +128,7 @@ object SmsStore {
                             timestamp = cursor.getLong(dateCol),
                             isOutgoing = cursor.getInt(typeCol) == Telephony.Sms.MESSAGE_TYPE_SENT,
                             providerId = cursor.getLong(idCol),
+                            read = cursor.getInt(readCol) != 0,
                         )
                     )
                 }
@@ -133,5 +136,23 @@ object SmsStore {
         }
     } catch (_: Exception) {
         null
+    }
+
+    /** Marks all messages from [address] as read/seen in the system store. */
+    fun markThreadRead(context: Context, address: String) {
+        try {
+            val values = ContentValues().apply {
+                put(Telephony.Sms.READ, 1)
+                put(Telephony.Sms.SEEN, 1)
+            }
+            context.contentResolver.update(
+                Telephony.Sms.CONTENT_URI,
+                values,
+                "${Telephony.Sms.ADDRESS} = ? AND ${Telephony.Sms.READ} = 0",
+                arrayOf(address),
+            )
+        } catch (_: Exception) {
+            // Best effort — in-memory state already reflects the read status.
+        }
     }
 }

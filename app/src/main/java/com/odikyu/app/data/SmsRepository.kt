@@ -12,6 +12,7 @@ data class SmsEntry(
     val timestamp: Long,
     val isOutgoing: Boolean,
     val providerId: Long? = null,
+    val read: Boolean = true,
 )
 
 /** In-memory inbox shared between the receiver and the UI (provider is the source of truth). */
@@ -34,6 +35,19 @@ object SmsRepository {
     /** Replaces the visible list with the full conversation history from the provider. */
     fun replaceAll(entries: List<SmsEntry>) {
         _messages.update { entries.takeLast(MAX_ENTRIES) }
+    }
+
+    /** Marks every message in the conversation as read (drives unread badges in the list). */
+    fun markRead(conversationKey: String) {
+        _messages.update { list ->
+            list.map { entry ->
+                if (!entry.read && Conversations.key(entry.sender) == conversationKey) {
+                    entry.copy(read = true)
+                } else {
+                    entry
+                }
+            }
+        }
     }
 
     fun clear() {
