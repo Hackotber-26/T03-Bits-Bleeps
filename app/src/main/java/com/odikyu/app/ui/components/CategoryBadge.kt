@@ -36,13 +36,20 @@ import com.odikyu.app.data.MessageCategory
 /**
  * The verdict worth surfacing on a card — null for a plain, unremarkable message.
  *
- * The model's README advises treating `max(probs) < 0.5` as suspicious in production
- * (a shaky prediction means the model didn't recognize the message — ambiguity is the
- * signal). Confident PERSONAL/UNCLASSIFIED stay unbadged; everything else shows its icon.
+ * Two thresholds, deliberately different:
+ * - Below [SUSPICIOUS_BELOW] the model is essentially guessing (its README says to treat
+ *   `max(probs) < 0.5` as review-worthy) — that ambiguity *is* the signal, so it surfaces
+ *   as Suspicious: a shaky guess on a scam is the failure mode we care about.
+ * - Normal categories only show when the model is clearly sure of them
+ *   ([CONFIDENT_ABOUT]). In between: nothing at all — no half-hearted classifications.
  */
+private const val SUSPICIOUS_BELOW = 0.5f
+private const val CONFIDENT_ABOUT = 0.75f
+
 fun Classification?.badgeCategory(): MessageCategory? {
     val verdict = this ?: return null
-    if (verdict.confidence < 0.5f) return MessageCategory.UNSAFE
+    if (verdict.confidence < SUSPICIOUS_BELOW) return MessageCategory.UNSAFE
+    if (verdict.confidence < CONFIDENT_ABOUT) return null
     return when (verdict.category) {
         MessageCategory.PERSONAL,
         MessageCategory.UNCLASSIFIED,
