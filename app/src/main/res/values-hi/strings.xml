@@ -21,7 +21,6 @@
     <string name="you_label">आप</string>
     <string name="from_label">%1$s</string>
 
-    <string name="link_warning">संदिग्ध लिंक मिला — कृपया सतर्क रहें</string>
 
     <string name="cat_transactional">लेन-देन</string>
     <string name="cat_promotional">प्रचार</string>

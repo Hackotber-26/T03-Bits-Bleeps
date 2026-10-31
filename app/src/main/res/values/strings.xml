@@ -28,7 +28,6 @@
     <string name="from_label">%1$s</string>
 
     <!-- Link Warning -->
-    <string name="link_warning">Suspicious link detected — proceed with caution</string>
 
     <!-- Message category badges -->
     <string name="cat_transactional">Transactional</string>

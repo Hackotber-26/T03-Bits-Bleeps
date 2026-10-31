@@ -671,76 +671,156 @@ private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
                         )
                     }
                 }
-                Text(
-                    text = entry.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                if (showSender) {
-                    Spacer(Modifier.height(4.dp))
+                if (links.isNotEmpty()) {
+                    LinkedBody(body = entry.body, links = links)
+                } else {
+                    Text(
+                        text = entry.body,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
+                Spacer(Modifier.height(4.dp))
             }
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // Meta line: time first, then the category pill (for non-suspicious messages;
+        // suspicious ones already wear the red bubble above).
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
+        ) {
             Text(
                 text = time,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
             )
-        }
-
-        if (category != null) {
-            CategoryBadge(category = category, modifier = Modifier.padding(top = 2.dp))
-        }
-
-        if (links.isNotEmpty()) {
-            LinkWarning(links = links)
+            if (category != null && !isSuspicious) {
+                CategoryBadge(category = category)
+            }
         }
     }
 }
 
-/** Shown directly below a message that contains a link. */
+/** Opens a URL from a message; everything is filtered through the browser. */
+private fun openLink(context: android.content.Context, url: String) {
+    val target = if (url.startsWith("http://", true) || url.startsWith("https://", true)) {
+        url
+    } else {
+        "https://$url"
+    }
+    runCatching {
+        context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(target)))
+    }
+}
+
+/**
+ * Message body with every link rendered as an inline, tappable chip (favicon + domain).
+ * Plain text keeps normal line-breaking; a link chip never wraps mid-chip.
+ */
 @Composable
-private fun LinkWarning(links: List<String>) {
-    Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.padding(top = 4.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = stringResource(R.string.link_warning),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold,
+private fun LinkedBody(body: String, links: List<String>) {
+    val context = LocalContext.current
+    val segments = remember(body, links) { splitAroundLinks(body, links) }
+    val bodyStyle = MaterialTheme.typography.bodyMedium
+    val chipStyle = MaterialTheme.typography.labelMedium
+    val chipBackground = MaterialTheme.colorScheme.surfaceContainerHighest
+    val chipForeground = MaterialTheme.colorScheme.primary
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        segments.forEach { segment ->
+            when (segment) {
+                is BodySeg.Text -> Text(
+                    text = segment.value,
+                    style = bodyStyle,
+                    softWrap = true,
                 )
-                links.take(3).forEach { link ->
-                    val domain = Links.displayTarget(link)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Favicon(domain = domain, size = 14.dp)
-                        Text(
-                            text = domain,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                }
+
+                is BodySeg.Link -> LinkChips(
+                    url = segment.url,
+                    style = chipStyle,
+                    background = chipBackground,
+                    foreground = chipForeground,
+                    modifier = Modifier.padding(top = 2.dp),
+                    onClick = { openLink(context, segment.url) },
+                )
             }
         }
     }
+}
+
+/** One clickable link chip: favicon + domain + ↗, sized to its content. */
+@Composable
+private fun LinkChips(
+    url: String,
+    style: androidx.compose.ui.text.TextStyle,
+    background: androidx.compose.ui.graphics.Color,
+    foreground: androidx.compose.ui.graphics.Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val domain = Links.displayTarget(url)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier
+                .height(26.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(background)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Favicon(domain = domain, size = 14.dp)
+            Text(
+                text = domain,
+                style = style,
+                color = foreground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                // Cap the chip at the bubble width without forcing it to fill.
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            Text(
+                text = "↗",
+                style = style,
+                color = foreground,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+private sealed interface BodySeg {
+    data class Text(val value: String) : BodySeg
+    data class Link(val url: String) : BodySeg
+}
+
+/** Splits a body around its links, preserving every other character (incl. newlines). */
+private fun splitAroundLinks(body: String, links: List<String>): List<BodySeg> {
+    if (links.isEmpty()) return listOf(BodySeg.Text(body))
+    val out = mutableListOf<BodySeg>()
+    var cursor = 0
+    while (cursor < body.length) {
+        var hitIndex = -1
+        var hitLink = ""
+        for (link in links) {
+            val i = body.indexOf(link, cursor)
+            if (i >= 0 && (hitIndex < 0 || i < hitIndex)) {
+                hitIndex = i
+                hitLink = link
+            }
+        }
+        if (hitIndex < 0) {
+            out.add(BodySeg.Text(body.substring(cursor)))
+            break
+        }
+        if (hitIndex > cursor) out.add(BodySeg.Text(body.substring(cursor, hitIndex)))
+        out.add(BodySeg.Link(hitLink))
+        cursor = hitIndex + hitLink.length
+    }
+    return out.filter { it !is BodySeg.Text || it.value.isNotEmpty() }
 }
