@@ -1,0 +1,22 @@
+services:
+  odikyu-dns:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: odikyu-dns-shield:latest
+    container_name: odikyu-dns
+    restart: unless-stopped
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "80:80/tcp"
+    env_file:
+      - .env
+    volumes:
+      - ./threats.db:/app/threats.db
+      - ./screenshots:/app/screenshots
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

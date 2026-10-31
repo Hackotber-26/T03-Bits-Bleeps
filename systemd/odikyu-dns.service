@@ -1,0 +1,31 @@
+[Unit]
+Description=Odikyu DNS Shield Proxy & AI Threat Defender (dns.odikyu.tech)
+After=network.target network-online.target systemd-resolved.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/odikyu-dns
+EnvironmentFile=/opt/odikyu-dns/.env
+ExecStart=/usr/bin/python3 /opt/odikyu-dns/dns_proxy.py
+
+# Allow binding to privileged ports 53 and 80
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+# Restart on failure with backoff
+Restart=always
+RestartSec=5s
+
+# Security hardening
+NoNewPrivileges=true
+LimitNOFILE=65535
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=odikyu-dns
+
+[Install]
+WantedBy=multi-user.target
