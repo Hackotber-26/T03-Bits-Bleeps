@@ -66,9 +66,9 @@ SERVER_HOSTNAME = os.getenv("SERVER_HOSTNAME", "dns.odikyu.tech")
 DNS_LISTEN_IP = os.getenv("DNS_LISTEN_IP", "0.0.0.0")
 DNS_PORT = int(os.getenv("DNS_PORT", "53"))
 
-# Block Page / HTTP Warning Server
+# Block Page / HTTP Warning Server (Render sets the PORT variable automatically)
+BLOCK_PAGE_PORT = int(os.getenv("PORT", os.getenv("BLOCK_PAGE_PORT", "80")))
 BLOCK_PAGE_IP = os.getenv("BLOCK_PAGE_IP", "127.0.0.1")
-BLOCK_PAGE_PORT = int(os.getenv("BLOCK_PAGE_PORT", "80"))
 BLOCK_PAGE_ALT_PORT = int(os.getenv("BLOCK_PAGE_ALT_PORT", "8080"))
 
 # Threat DB & Feeds

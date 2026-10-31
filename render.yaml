@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: odikyu-dns-shield
+    runtime: python
+    buildCommand: "pip install --upgrade pip"
+    startCommand: "python block_page_server.py"
+    plan: free
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: SERVER_HOSTNAME
+        value: "dns.odikyu.tech"
+      - key: GEMMA_MODEL_NAME
+        value: "gemma-4-31b-it"
+      - key: GEMMA_API_BASE
+        value: "https://generativelanguage.googleapis.com"
+      - key: BLOCK_SUSPICIOUS
+        value: "true"
+      - key: AI_INSPECTION_ENABLED
+        value: "true"
+      - key: AUTO_INSPECT_SUSPICIOUS
+        value: "true"
+      - key: DOH_SERVER
+        value: "https://cloudflare-dns.com/dns-query"
+      - key: THREAT_DB_PATH
+        value: "threats.db"
+      - key: SYNC_INTERVAL_SECONDS
+        value: "7200"
+      - key: GEMMA_API_KEY
+        sync: false # Sensitive secret: enter your API key in Render Dashboard
