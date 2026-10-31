@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -442,9 +441,7 @@ private fun ConversationDetail(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .imePadding()
+        modifier = modifier.fillMaxSize(),
     ) {
         Row(
             modifier = Modifier
@@ -708,26 +705,24 @@ private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
+                // Classification lives inside the bubble, stamped at its bottom-right.
+                if (category != null && !isSuspicious) {
+                    Spacer(Modifier.height(6.dp))
+                    CategoryBadge(
+                        category = category,
+                        modifier = Modifier.align(Alignment.End),
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
             }
         }
 
-        // Meta line: time first, then the category pill (for non-suspicious messages;
-        // suspicious ones already wear the red bubble above).
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Text(
+            text = time,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
-        ) {
-            Text(
-                text = time,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (category != null && !isSuspicious) {
-                CategoryBadge(category = category)
-            }
-        }
+        )
     }
 }
 

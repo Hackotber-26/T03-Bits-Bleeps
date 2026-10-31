@@ -1,9 +1,15 @@
 package com.odikyu.app.ui.navigation
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
@@ -24,6 +30,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import com.odikyu.app.ui.screens.DnsScreen
 import com.odikyu.app.ui.screens.MessagesScreen
@@ -45,12 +52,26 @@ fun OdikyuApp(
     prefillNumber: String? = null,
 ) {
     var currentTab by rememberSaveable { mutableStateOf(OdikyuTab.Messages) }
+    val density = LocalDensity.current
+    // Hide the tab bar while typing so the composer sits flush on the keyboard.
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
 
-    Scaffold(modifier = modifier) { innerPadding ->
+    Scaffold(
+        modifier = modifier,
+        // Insets are applied manually below: bottom = max(navigationBars, ime), so no
+        // dead gap can open between the composer and the keyboard (adjustResize does
+        // nothing under edge-to-edge; imePadding alone would double-count the nav bar).
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+    ) { _ ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .windowInsetsPadding(WindowInsets.statusBars.only(WindowInsetsSides.Top))
+                .windowInsetsPadding(
+                    WindowInsets.navigationBars
+                        .union(WindowInsets.ime)
+                        .only(WindowInsetsSides.Bottom),
+                ),
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 when (currentTab) {
@@ -60,25 +81,27 @@ fun OdikyuApp(
                 }
             }
 
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.background,
-                // The Scaffold's innerPadding already lifts content above the system nav bar;
-                // letting the bar add its own inset again would leave a dead gap below it.
-                windowInsets = WindowInsets(0, 0, 0, 0),
-            ) {
-                OdikyuTab.entries.forEach { tab ->
-                    val title = stringResource(tab.titleRes)
-                    NavigationBarItem(
-                        selected = currentTab == tab,
-                        onClick = { currentTab = tab },
-                        icon = {
-                            Icon(
-                                imageVector = if (currentTab == tab) tab.filledIcon else tab.outlinedIcon,
-                                contentDescription = title,
-                            )
-                        },
-                        label = { Text(title) },
-                    )
+            if (!imeVisible) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    // Top-level insets are applied on the root column above; letting the
+                    // bar add its own again would leave a dead gap below it.
+                    windowInsets = WindowInsets(0, 0, 0, 0),
+                ) {
+                    OdikyuTab.entries.forEach { tab ->
+                        val title = stringResource(tab.titleRes)
+                        NavigationBarItem(
+                            selected = currentTab == tab,
+                            onClick = { currentTab = tab },
+                            icon = {
+                                Icon(
+                                    imageVector = if (currentTab == tab) tab.filledIcon else tab.outlinedIcon,
+                                    contentDescription = title,
+                                )
+                            },
+                            label = { Text(title) },
+                        )
+                    }
                 }
             }
         }
