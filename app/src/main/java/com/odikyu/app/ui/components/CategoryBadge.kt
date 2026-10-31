@@ -37,13 +37,14 @@ import com.odikyu.app.data.MessageCategory
  * The verdict worth surfacing on a card — null for a plain, unremarkable message.
  *
  * Two thresholds, deliberately different:
- * - Below [SUSPICIOUS_BELOW] the model is essentially guessing (its README says to treat
- *   `max(probs) < 0.5` as review-worthy) — that ambiguity *is* the signal, so it surfaces
- *   as Suspicious: a shaky guess on a scam is the failure mode we care about.
+ * - Below [SUSPICIOUS_BELOW] the model isn't sure enough to claim any category, and
+ *   uncertainty itself is the warning sign (the model README's review rule, with its
+ *   0.5 cutoff raised per product decision) — surface it as Suspicious rather than
+ *   staying silent on a possible scam.
  * - Normal categories only show when the model is clearly sure of them
- *   ([CONFIDENT_ABOUT]). In between: nothing at all — no half-hearted classifications.
+ *   ([CONFIDENT_ABOUT]). In between the two: nothing at all.
  */
-private const val SUSPICIOUS_BELOW = 0.5f
+private const val SUSPICIOUS_BELOW = 0.7f
 private const val CONFIDENT_ABOUT = 0.75f
 
 fun Classification?.badgeCategory(): MessageCategory? {

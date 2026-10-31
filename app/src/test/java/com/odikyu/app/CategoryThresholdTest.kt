@@ -12,20 +12,23 @@ class CategoryThresholdTest {
 
     @Test
     fun `low confidence is flagged as suspicious`() {
-        // The model README's review cutoff: a shaky guess on a scam is the costly miss.
-        val scam = Classification(MessageCategory.TRANSACTIONAL, confidence = 0.49f)
-        assertEquals(MessageCategory.UNSAFE, scam.badgeCategory())
+        // Uncertainty itself is the warning sign (model README's review rule,
+        // cutoff raised from 0.5 to 0.7).
+        listOf(0.0f, 0.49f, 0.69f).forEach { conf ->
+            val scam = Classification(MessageCategory.TRANSACTIONAL, confidence = conf)
+            assertEquals(MessageCategory.UNSAFE, scam.badgeCategory())
+        }
     }
 
     @Test
     fun `mid confidence shows nothing`() {
-        // Not suspicious, not confident enough to claim a category — stay quiet.
+        // Between the two cutoffs: not suspicious, not confident — stay quiet.
         listOf(
             MessageCategory.TRANSACTIONAL,
             MessageCategory.PROMOTIONAL,
             MessageCategory.SPAM,
         ).forEach { category ->
-            assertNull(Classification(category, confidence = 0.5f).badgeCategory())
+            assertNull(Classification(category, confidence = 0.7f).badgeCategory())
             assertNull(Classification(category, confidence = 0.74f).badgeCategory())
         }
     }
