@@ -1,7 +1,12 @@
 package com.odikyu.app.ui.screens
 
 import android.content.Context
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
@@ -61,6 +67,9 @@ private const val CLOUDFLARE_DOH_URL = "https://1.1.1.1/dns-query"
 
 /** Friendly green used for the "protected" state, independent of the dynamic theme. */
 private val ProtectedGreen = Color(0xFF2FBF71)
+
+/** Attention-grabbing red that pushes the user to turn protection on. */
+private val AttentionRed = Color(0xFFF44336)
 
 /** Wire-format DNS query for the A record of example.com, used to verify connectivity. */
 private val PROBE_QUERY = byteArrayOf(
@@ -94,6 +103,11 @@ fun DnsScreen(modifier: Modifier = Modifier) {
     // Optimistic: the knob follows the user's intent immediately, even while verifying.
     val toggleOn = status != DohStatus.Off
     val busy = status == DohStatus.Checking
+    val accent = when (status) {
+        DohStatus.Protected, DohStatus.Checking -> ProtectedGreen
+        DohStatus.Off -> AttentionRed
+        DohStatus.Failed -> MaterialTheme.colorScheme.error
+    }
 
     Column(
         modifier = modifier
@@ -117,7 +131,7 @@ fun DnsScreen(modifier: Modifier = Modifier) {
 
         Spacer(Modifier.weight(1f))
 
-        ToggleRings(active = toggleOn) {
+        ToggleRings(accent = accent, active = toggleOn) {
             ProtectionToggle(
                 checked = toggleOn,
                 enabled = !busy,
@@ -140,11 +154,7 @@ fun DnsScreen(modifier: Modifier = Modifier) {
             },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
-            color = when (status) {
-                DohStatus.Protected -> ProtectedGreen
-                DohStatus.Failed -> MaterialTheme.colorScheme.error
-                else -> MaterialTheme.colorScheme.onSurface
-            },
+            color = accent,
             textAlign = TextAlign.Center,
         )
 
@@ -152,17 +162,26 @@ fun DnsScreen(modifier: Modifier = Modifier) {
 
         StatusPill(status = status)
 
-        Spacer(Modifier.weight(1.2f))
+        Spacer(Modifier.weight(1f))
     }
 }
 
 /** Concentric dashed rings + floating dots behind the toggle, echoing the reference design. */
 @Composable
 private fun ToggleRings(
+    accent: Color,
     active: Boolean,
     content: @Composable () -> Unit,
 ) {
-    val ringColor = if (active) ProtectedGreen else MaterialTheme.colorScheme.onSurfaceVariant
+    // Gentle pulse while protection is off, drawing the eye toward the switch.
+    val infinite = rememberInfiniteTransition(label = "rings")
+    val pulse by infinite.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.85f,
+        animationSpec = infiniteRepeatable(tween(1_000), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    val dashedAlpha = if (active) 0.45f else pulse
 
     Box(
         modifier = Modifier.size(300.dp),
@@ -171,12 +190,12 @@ private fun ToggleRings(
         Canvas(modifier = Modifier.fillMaxSize()) {
             val c = center
             drawCircle(
-                color = ringColor.copy(alpha = 0.10f),
+                color = accent.copy(alpha = 0.10f),
                 radius = 140.dp.toPx(),
                 style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round),
             )
             drawCircle(
-                color = ringColor.copy(alpha = 0.45f),
+                color = accent.copy(alpha = dashedAlpha),
                 radius = 118.dp.toPx(),
                 style = Stroke(
                     width = 2.dp.toPx(),
@@ -186,7 +205,7 @@ private fun ToggleRings(
                 ),
             )
             drawCircle(
-                color = ringColor.copy(alpha = 0.16f),
+                color = accent.copy(alpha = 0.16f),
                 radius = 96.dp.toPx(),
                 style = Stroke(width = 1.5.dp.toPx()),
             )
@@ -194,7 +213,7 @@ private fun ToggleRings(
             listOf(-40f, 25f, 130f, 205f, 300f).forEach { degrees ->
                 val rad = Math.toRadians(degrees.toDouble())
                 drawCircle(
-                    color = ringColor.copy(alpha = 0.6f),
+                    color = accent.copy(alpha = dashedAlpha),
                     radius = 3.dp.toPx(),
                     center = Offset(
                         c.x + (140.dp.toPx() * kotlin.math.cos(rad)).toFloat(),
@@ -202,8 +221,8 @@ private fun ToggleRings(
                     ),
                 )
             }
-            // Empty center wash so the toggle sits on a soft disc.
-            drawCircle(color = ringColor.copy(alpha = 0.07f), radius = 84.dp.toPx())
+            // Soft center wash so the toggle sits on a glowing disc.
+            drawCircle(color = accent.copy(alpha = 0.08f), radius = 84.dp.toPx())
         }
         content()
     }
@@ -217,8 +236,8 @@ private fun ProtectionToggle(
     onToggle: () -> Unit,
 ) {
     val knobPos by animateFloatAsState(targetValue = if (checked) 1f else 0f, label = "knob")
-    val trackColor = if (checked) ProtectedGreen else MaterialTheme.colorScheme.surfaceContainerHighest
-    val onTrack = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+    // Amber when off (invites the tap), green when on.
+    val trackColor = if (checked) ProtectedGreen else AttentionRed
 
     Box(
         modifier = Modifier
@@ -231,7 +250,7 @@ private fun ProtectionToggle(
     ) {
         Text(
             text = if (checked) "ON" else "OFF",
-            color = if (checked) Color.White else onTrack,
+            color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
             letterSpacing = 1.5.sp,
@@ -244,6 +263,7 @@ private fun ProtectionToggle(
                 .align(Alignment.CenterStart)
                 .offset(x = 8.dp + 80.dp * knobPos)
                 .size(56.dp)
+                .shadow(6.dp, CircleShape)
                 .clip(CircleShape)
                 .background(Color.White),
         )
@@ -255,8 +275,9 @@ private fun ProtectionToggle(
 private fun StatusPill(status: DohStatus) {
     val (container, content) = when (status) {
         DohStatus.Protected -> ProtectedGreen.copy(alpha = 0.16f) to ProtectedGreen
+        DohStatus.Checking -> ProtectedGreen.copy(alpha = 0.12f) to ProtectedGreen
+        DohStatus.Off -> AttentionRed.copy(alpha = 0.18f) to AttentionRed
         DohStatus.Failed -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
-        else -> MaterialTheme.colorScheme.surfaceContainerHighest to MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Surface(color = container, contentColor = content, shape = RoundedCornerShape(50)) {
@@ -272,13 +293,7 @@ private fun StatusPill(status: DohStatus) {
                     color = content,
                 )
                 DohStatus.Protected -> Icon(Icons.Filled.CheckCircle, null, Modifier.size(16.dp))
-                DohStatus.Failed -> Icon(Icons.Filled.Warning, null, Modifier.size(16.dp))
-                DohStatus.Off -> Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(content),
-                )
+                DohStatus.Off, DohStatus.Failed -> Icon(Icons.Filled.Warning, null, Modifier.size(16.dp))
             }
             Text(
                 text = when (status) {
