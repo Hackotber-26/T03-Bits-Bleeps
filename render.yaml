@@ -2,7 +2,7 @@ services:
   - type: web
     name: odikyu-dns-shield
     runtime: python
-    buildCommand: "pip install --upgrade pip"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "python block_page_server.py"
     plan: free
     envVars:
