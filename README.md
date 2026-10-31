@@ -69,7 +69,7 @@ An enterprise-grade, high-performance **Proxy DNS Server** designed for deployme
 
 3. **Sub-Millisecond Threat Intelligence Engine**:
    - Stores over 25,000+ confirmed malicious indicators in a local SQLite database (`threats.db`) running in Write-Ahead Logging (`WAL`) mode with covering indexes.
-   - Background thread periodically synchronizes trusted feeds (PhishTank bulk CSV, OpenPhish feed) with zero DNS query latency.
+   - Background thread periodically synchronizes trusted feeds (PhishTank compressed bulk CSV with ETag change checks, OpenPhish feed) with zero DNS query latency.
    - Hierarchical subdomain matching: blocking `evil-phish.com` automatically blocks `*.evil-phish.com`.
 
 4. **Transparent Rule-Based Weighted Scoring**:
@@ -111,7 +111,19 @@ AUTO_INSPECT_SUSPICIOUS=true
 DOH_SERVER=https://cloudflare-dns.com/dns-query
 THREAT_DB_PATH=threats.db
 SYNC_INTERVAL_SECONDS=7200
+
+# PhishTank feed (developer requirements: https://www.phishtank.com/developer_info)
+#PHISHTANK_API_KEY=your_phishtank_app_key
+PHISHTANK_USER_AGENT=odikyu-dns-shield/2.0 (+https://dns.odikyu.tech)
 ```
+
+### PhishTank feed compliance
+
+Every request the server makes to `data.phishtank.com` follows PhishTank's developer requirements:
+
+- **Descriptive User-Agent** on all GET *and* HEAD requests (`odikyu-dns-shield/2.0 (+https://dns.odikyu.tech)`, overridable via `PHISHTANK_USER_AGENT`) — blank/generic agents get rate limited or extra security challenges.
+- **Bulk lookups use the downloadable database** `online-valid.csv.gz` (compressed), with an automatic fallback to the documented plain `online-valid.csv`.
+- **Application key** (`PHISHTANK_API_KEY`): switches to the keyed URL `https://data.phishtank.com/data/<key>/online-valid.csv.gz` and enables **unlimited HTTP HEAD requests** to compare the `ETag` — since files update hourly on the hour, unchanged files are never re-downloaded (checked each `SYNC_INTERVAL_SECONDS` cycle).
 
 ---
 

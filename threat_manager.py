@@ -17,6 +17,7 @@ from __future__ import annotations
 import abc
 import csv
 import enum
+import gzip
 import io
 import json
 import math
@@ -906,11 +907,25 @@ class ThreatFeed(abc.ABC):
 
 class PhishTankFeed(ThreatFeed):
     """
-    Fetches verified active phishing records in bulk from PhishTank's database feed.
-    Default feed: http://data.phishtank.com/data/online-valid.csv
+    Fetches verified active phishing records in bulk from PhishTank's downloadable
+    database, following their developer requirements:
+        https://www.phishtank.com/developer_info
+
+    - Every request (GET *and* HEAD) carries a descriptive User-Agent identifying
+      this application — blank/generic agents get rate limited or extra challenges.
+    - With an application key (``PHISHTANK_API_KEY``) the download URL is keyed
+      (``https://data.phishtank.com/data/<key>/online-valid.csv.gz``) and we may
+      issue unlimited HTTP HEAD requests to compare the ETag: unchanged hourly
+      files are then never re-downloaded.
+    - Uses the compressed CSV by default and transparently falls back to the
+      plain CSV if the compressed asset is unavailable.
     """
     name = "PhishTank"
     threat_type = "phishing"
+
+    BASE_URL = "https://data.phishtank.com/data"
+    DEFAULT_USER_AGENT = "odikyu-dns-shield/2.0 (+https://dns.odikyu.tech)"
+    GZIP_MAGIC = b"\x1f\x8b"
 
     def __init__(
         self,
@@ -920,44 +935,95 @@ class PhishTankFeed(ThreatFeed):
         timeout: float = 30.0,
         enabled: bool = True,
     ):
-        self.api_key = api_key or os.getenv("PHISHTANK_API_KEY")
-        if feed_url:
-            self.feed_url = feed_url
-        elif self.api_key:
-            self.feed_url = f"http://data.phishtank.com/data/{self.api_key}/online-valid.csv"
-        else:
-            self.feed_url = "http://data.phishtank.com/data/online-valid.csv"
-
-        self.user_agent = user_agent or os.getenv("PHISHTANK_USER_AGENT", "phishtank/odikyu-dns")
+        key = (api_key if api_key is not None else os.getenv("PHISHTANK_API_KEY", "")).strip()
+        self.api_key = key
+        prefix = f"{self.BASE_URL}/{key}" if key else self.BASE_URL
+        self.primary_url = feed_url or f"{prefix}/online-valid.csv.gz"
+        self.fallback_url = feed_url or f"{prefix}/online-valid.csv"
+        # Backwards-compatible alias (the plain-CSV URL used before compression).
+        self.feed_url = self.primary_url
+        self.user_agent = (
+            user_agent or os.getenv("PHISHTANK_USER_AGENT", "")
+        ).strip() or self.DEFAULT_USER_AGENT
         self.timeout = timeout
         self.enabled = enabled
+        self._known_etag: str | None = None
+        self._etag_url: str | None = None  # last URL that served real data
 
-    def fetch_records(self) -> Generator[tuple[str, str], None, None]:
+    def _feed_unchanged(self) -> bool:
+        """
+        HTTP HEAD + ETag comparison. Per PhishTank these checks are unlimited only
+        for requests carrying an application key, so they run only when keyed.
+        The HEAD targets the URL that last served real data (the compressed asset
+        may 404 on their side while the plain CSV works).
+        """
+        if not self.api_key:
+            return False
+        target = self._etag_url or self.primary_url
+        try:
+            request = urllib.request.Request(
+                target,
+                method="HEAD",
+                headers={"User-Agent": self.user_agent},
+            )
+            with urllib.request.urlopen(request, timeout=self.timeout) as resp:
+                etag = resp.headers.get("ETag") if resp.headers else None
+        except Exception:
+            return False  # couldn't confirm — download as usual
+        return bool(etag) and etag == self._known_etag
+
+    def _download_text(self, url: str) -> str:
+        """GET [url] with the descriptive UA; returns decompressed text + stores ETag."""
         request = urllib.request.Request(
-            self.feed_url,
+            url,
             headers={
                 "User-Agent": self.user_agent,
                 "Accept-Encoding": "identity",
             },
         )
         with urllib.request.urlopen(request, timeout=self.timeout) as resp:
-            content = resp.read().decode("utf-8", errors="ignore")
-            reader = csv.DictReader(io.StringIO(content))
-            seen_domains = set()
+            raw = resp.read()
+            etag = resp.headers.get("ETag") if resp.headers else None
+        if raw[:2] == self.GZIP_MAGIC:
+            raw = gzip.decompress(raw)
+        self._etag_url = url  # remember what actually worked for future HEAD checks
+        if etag:
+            self._known_etag = etag
+        return raw.decode("utf-8", errors="ignore")
 
-            for row in reader:
-                url = row.get("url")
-                if not url:
-                    continue
-                domain = extract_domain_from_url(url)
-                if not domain or domain in seen_domains:
-                    continue
-                seen_domains.add(domain)
+    def fetch_records(self) -> Generator[tuple[str, str], None, None]:
+        if self._feed_unchanged():
+            print("[=] PhishTank: file unchanged (ETag match) — keeping existing records")
+            return
 
-                phish_id = row.get("phish_id", "")
-                target = row.get("target", "Unknown")
-                details = f"Target: {target}, PhishID: {phish_id}"
-                yield domain, details
+        # Primary: compressed keyed/anonymous URL; fallback: classic plain CSV.
+        text: str | None = None
+        last_error: Exception | None = None
+        for url in dict.fromkeys((self.primary_url, self.fallback_url)):
+            try:
+                text = self._download_text(url)
+                break
+            except Exception as exc:
+                last_error = exc
+        if text is None:
+            raise last_error if last_error else RuntimeError("PhishTank feed unreachable")
+
+        reader = csv.DictReader(io.StringIO(text))
+        seen_domains = set()
+
+        for row in reader:
+            url = row.get("url")
+            if not url:
+                continue
+            domain = extract_domain_from_url(url)
+            if not domain or domain in seen_domains:
+                continue
+            seen_domains.add(domain)
+
+            phish_id = row.get("phish_id", "")
+            target = row.get("target", "Unknown")
+            details = f"Target: {target}, PhishID: {phish_id}"
+            yield domain, details
 
 
 class OpenPhishFeed(ThreatFeed):

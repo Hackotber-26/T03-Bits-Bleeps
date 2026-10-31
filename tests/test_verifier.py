@@ -1,7 +1,9 @@
+import gzip
 import os
 import tempfile
 import time
 import unittest
+import urllib.error
 from unittest.mock import MagicMock, patch
 
 import dns_proxy
@@ -168,6 +170,94 @@ class TestThreatManagerAndRiskScoring(unittest.TestCase):
         self.assertEqual(results[0][0], "evil1.com")
         self.assertIn("PayPal", results[0][1])
         self.assertEqual(results[1][0], "evil2.org")
+
+    @patch("urllib.request.urlopen")
+    def test_phishtank_descriptive_user_agent_and_gzip(self, mock_urlopen):
+        """Compressed feed + descriptive UA on every request (PhishTank dev requirement)."""
+        csv_data = (
+            "phish_id,url,phish_detail_url,submission_time,verified,verification_time,online,target\n"
+            "333,https://gzip-phish.com/pay,http://...,2026-10-31,yes,2026-10-31,yes,Netflix\n"
+        ).encode("utf-8")
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = gzip.compress(csv_data)
+        mock_resp.headers = {"ETag": '"rev-1"'}
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        feed = PhishTankFeed()
+        results = list(feed.fetch_records())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][0], "gzip-phish.com")
+        self.assertIn("Netflix", results[0][1])
+
+        request = mock_urlopen.call_args[0][0]
+        self.assertIn("odikyu-dns-shield", request.get_header("User-agent"))
+        self.assertTrue(feed.primary_url.startswith("https://"))
+        self.assertTrue(feed.primary_url.endswith("online-valid.csv.gz"))
+
+    @patch("urllib.request.urlopen")
+    def test_phishtank_app_key_url_and_etag_skip(self, mock_urlopen):
+        """Keyed URL format + unlimited HEAD/ETag checks skip unchanged downloads."""
+        csv_data = (
+            "phish_id,url,phish_detail_url,submission_time,verified,verification_time,online,target\n"
+            "444,https://keyed-phish.com/x,http://...,2026-10-31,yes,2026-10-31,yes,Bank\n"
+        ).encode("utf-8")
+
+        head_resp = MagicMock()
+        head_resp.headers = {"ETag": '"hour-1"'}
+        head_resp.__enter__.return_value = head_resp
+
+        get_resp = MagicMock()
+        get_resp.read.return_value = csv_data
+        get_resp.headers = {"ETag": '"hour-1"'}
+        get_resp.__enter__.return_value = get_resp
+
+        mock_urlopen.side_effect = lambda request, *a, **kw: (
+            head_resp if request.get_method() == "HEAD" else get_resp
+        )
+
+        feed = PhishTankFeed(api_key="APPKEY123")
+        # Keyed URL per https://data.phishtank.com/data/<your app key>/...
+        self.assertEqual(
+            feed.primary_url,
+            "https://data.phishtank.com/data/APPKEY123/online-valid.csv.gz",
+        )
+
+        first = list(feed.fetch_records())
+        self.assertEqual(len(first), 1)
+        second = list(feed.fetch_records())
+        self.assertEqual(second, [])  # ETag unchanged -> no second download
+
+        methods = [call[0][0].get_method() for call in mock_urlopen.call_args_list]
+        self.assertEqual(methods, ["HEAD", "GET", "HEAD"])
+        # HEAD carried the descriptive UA too.
+        for call in mock_urlopen.call_args_list:
+            self.assertIn("odikyu-dns-shield", call[0][0].get_header("User-agent"))
+
+    @patch("urllib.request.urlopen")
+    def test_phishtank_falls_back_to_plain_csv(self, mock_urlopen):
+        """If the compressed asset 404s, retry the documented plain-CSV URL."""
+        csv_data = (
+            "phish_id,url,phish_detail_url,submission_time,verified,verification_time,online,target\n"
+            "555,https://plain-fallback.com/a,http://...,2026-10-31,yes,2026-10-31,yes,Apple\n"
+        ).encode("utf-8")
+
+        not_found = urllib.error.HTTPError(
+            "https://data.phishtank.com/data/online-valid.csv.gz",
+            404, "Not Found", {}, None,
+        )
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = csv_data
+        mock_resp.headers = {}
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.side_effect = [not_found, mock_resp]
+
+        feed = PhishTankFeed()
+        results = list(feed.fetch_records())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][0], "plain-fallback.com")
+        self.assertEqual(mock_urlopen.call_count, 2)
 
     @patch("urllib.request.urlopen")
     def test_openphish_feed_fetch(self, mock_urlopen):
