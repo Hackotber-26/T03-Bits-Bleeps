@@ -34,7 +34,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
@@ -78,6 +77,7 @@ import com.odikyu.app.data.SmsRepository
 import com.odikyu.app.data.SmsStore
 import com.odikyu.app.ui.components.Avatar
 import com.odikyu.app.ui.components.Favicon
+import com.odikyu.app.ui.components.FaviconAvatar
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -237,11 +237,6 @@ private fun ConversationList(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
             )
-            if (conversations.isNotEmpty()) {
-                IconButton(onClick = { SmsRepository.clear() }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Clear messages")
-                }
-            }
         }
 
         if (!isDefault) {
@@ -300,11 +295,15 @@ private fun ConversationRow(
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Avatar(
-            address = conversation.address,
-            name = name.orEmpty(),
-            size = 48.dp,
-        )
+        if (lastLinkDomain != null) {
+            FaviconAvatar(domain = lastLinkDomain, size = 48.dp)
+        } else {
+            Avatar(
+                address = conversation.address,
+                name = name.orEmpty(),
+                size = 48.dp,
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -339,12 +338,7 @@ private fun ConversationRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = true),
                 )
-                if (lastLinkDomain != null) {
-                    Spacer(Modifier.width(6.dp))
-                    Favicon(domain = lastLinkDomain, size = 16.dp)
-                }
                 if (unread > 0) {
-                    Spacer(Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
                             .size(20.dp)
