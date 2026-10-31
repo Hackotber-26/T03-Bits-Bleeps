@@ -113,16 +113,25 @@ THREAT_DB_PATH=threats.db
 SYNC_INTERVAL_SECONDS=7200
 
 # PhishTank feed (developer requirements: https://www.phishtank.com/developer_info)
+PHISHTANK_LOOKUP_URL=https://lookup.odikyu.tech
 #PHISHTANK_API_KEY=your_phishtank_app_key
 PHISHTANK_USER_AGENT=odikyu-dns-shield/2.0 (+https://dns.odikyu.tech)
 ```
 
-### PhishTank feed compliance
+### PhishTank sources
 
-Every request the server makes to `data.phishtank.com` follows PhishTank's developer requirements:
+Exactly one PhishTank source is registered (see `create_default_manager`):
+
+1. **Phishtank Lookup API instance (default)** — bulk `GET {PHISHTANK_LOOKUP_URL}/urls`
+   pull of the instance's 72-hour URL window. No registration required, which matters
+   because official application-key registration is currently blocked. The base URL
+   defaults to `https://lookup.odikyu.tech` and is env-overridable (empty = disable).
+2. **Official bulk download** — used only when `PHISHTANK_API_KEY` is set.
+
+Requests to either source follow PhishTank's developer requirements:
 
 - **Descriptive User-Agent** on all GET *and* HEAD requests (`odikyu-dns-shield/2.0 (+https://dns.odikyu.tech)`, overridable via `PHISHTANK_USER_AGENT`) — blank/generic agents get rate limited or extra security challenges.
-- **Bulk lookups use the downloadable database** `online-valid.csv.gz` (compressed), with an automatic fallback to the documented plain `online-valid.csv`.
+- **Bulk lookups use the downloadable database** (`online-valid.csv.gz` compressed, automatic fallback to the documented plain `online-valid.csv` — the `.gz` asset currently 404s server-side, so the fallback is what actually serves data today).
 - **Application key** (`PHISHTANK_API_KEY`): switches to the keyed URL `https://data.phishtank.com/data/<key>/online-valid.csv.gz` and enables **unlimited HTTP HEAD requests** to compare the `ETag` — since files update hourly on the hour, unchanged files are never re-downloaded (checked each `SYNC_INTERVAL_SECONDS` cycle).
 
 ---

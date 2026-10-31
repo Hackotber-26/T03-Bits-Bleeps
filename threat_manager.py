@@ -1026,6 +1026,115 @@ class PhishTankFeed(ThreatFeed):
             yield domain, details
 
 
+class PhishTankLookupFeed(ThreatFeed):
+    """
+    Bulk PhishTank source served by a Phishtank Lookup API instance
+    (Swagger: GET /urls — "Get all the URLs"; the instance keeps 72 hours).
+
+    Used instead of the official data.phishtank.com downloads when application-key
+    registration is unavailable. Base URL: ``PHISHTANK_LOOKUP_URL`` (default
+    ``https://lookup.odikyu.tech``); set it to an empty string to disable.
+
+    The descriptive User-Agent requirement still applies to every request, and the
+    JSON payload is parsed tolerantly (bare list of URL strings, list of entry
+    objects, common wrapper keys, or a url-keyed mapping).
+    """
+    name = "PhishTank"
+    threat_type = "phishing"
+    DEFAULT_BASE_URL = "https://lookup.odikyu.tech"
+
+    WRAPPER_KEYS = ("urls", "entries", "data", "results", "items")
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        user_agent: str | None = None,
+        timeout: float = 30.0,
+        enabled: bool = True,
+    ):
+        resolved = base_url if base_url is not None else os.getenv(
+            "PHISHTANK_LOOKUP_URL", self.DEFAULT_BASE_URL
+        )
+        self.base_url = resolved.rstrip("/")
+        self.user_agent = (
+            user_agent or os.getenv("PHISHTANK_USER_AGENT", "")
+        ).strip() or PhishTankFeed.DEFAULT_USER_AGENT
+        self.timeout = timeout
+        self.enabled = enabled
+
+    @property
+    def urls_endpoint(self) -> str:
+        return f"{self.base_url}/urls"
+
+    @staticmethod
+    def _iter_entries(payload: object) -> Generator[tuple[str, str, str], None, None]:
+        """Yields (url, target, phish_id) from any documented/observed payload shape."""
+        if isinstance(payload, dict):
+            for key in PhishTankLookupFeed.WRAPPER_KEYS:
+                if isinstance(payload.get(key), list):
+                    payload = payload[key]
+                    break
+            else:
+                # url-keyed mapping: {"http://x": entry, ...}
+                for key, value in payload.items():
+                    if str(key).startswith("http"):
+                        if isinstance(value, dict):
+                            yield (
+                                str(value.get("url") or key),
+                                str(value.get("target") or "Unknown"),
+                                str(value.get("phish_id") or ""),
+                            )
+                        else:
+                            yield str(key), "Unknown", ""
+                return
+
+        if not isinstance(payload, list):
+            return
+
+        for item in payload:
+            if isinstance(item, str):
+                yield item, "Unknown", ""
+            elif isinstance(item, dict):
+                url = item.get("url") or item.get("link")
+                if url:
+                    yield (
+                        str(url),
+                        str(item.get("target") or "Unknown"),
+                        str(item.get("phish_id") or ""),
+                    )
+
+    def fetch_records(self) -> Generator[tuple[str, str], None, None]:
+        request = urllib.request.Request(
+            self.urls_endpoint,
+            headers={
+                "User-Agent": self.user_agent,
+                "Accept": "application/json",
+            },
+        )
+        with urllib.request.urlopen(request, timeout=self.timeout) as resp:
+            text = resp.read().decode("utf-8", errors="ignore")
+
+        payload = json.loads(text)
+        seen_domains: set[str] = set()
+        imported = 0
+        for url, target, phish_id in self._iter_entries(payload):
+            domain = extract_domain_from_url(url)
+            if not domain or domain in seen_domains:
+                continue
+            seen_domains.add(domain)
+            imported += 1
+            yield domain, f"Target: {target}, PhishID: {phish_id}"
+
+        if imported == 0 and payload:
+            # Non-empty payload that yielded nothing = unrecognized shape; fail
+            # loudly so the misparse shows up in feed_sync_history instead of
+            # silently importing an empty blocklist.
+            raise ValueError(
+                f"PhishTank lookup payload shape not recognized "
+                f"(top-level {type(payload).__name__} of length {len(payload)})"
+            )
+
+
 class OpenPhishFeed(ThreatFeed):
     """
     Fetches active phishing URLs from OpenPhish Community Feed.
@@ -1285,10 +1394,24 @@ class ThreatIntelligenceManager:
 # ---------------------------------------------------------------------------
 
 def create_default_manager(db_path: str = "threats.db") -> ThreatIntelligenceManager:
-    """Create a ThreatIntelligenceManager pre-configured with PhishTank and OpenPhish."""
+    """
+    Create a ThreatIntelligenceManager pre-configured with PhishTank and OpenPhish.
+
+    PhishTank source selection (exactly one is registered):
+    - Official bulk download (data.phishtank.com) when ``PHISHTANK_API_KEY`` is set —
+      keyed downloads also unlock the unlimited HEAD/ETag change checks.
+    - Otherwise the Phishtank Lookup API instance (``PHISHTANK_LOOKUP_URL``,
+      default https://lookup.odikyu.tech), which needs no registration.
+      Set that variable to an empty string to disable PhishTank entirely.
+    """
     manager = ThreatIntelligenceManager(db_path=db_path)
-    # 1. PhishTank Bulk Feed
-    manager.register_feed(PhishTankFeed())
+    # 1. PhishTank: official keyed feed, else the lookup instance.
+    if os.getenv("PHISHTANK_API_KEY", "").strip():
+        manager.register_feed(PhishTankFeed())
+    else:
+        lookup_url = os.getenv("PHISHTANK_LOOKUP_URL", PhishTankLookupFeed.DEFAULT_BASE_URL)
+        if lookup_url.strip():
+            manager.register_feed(PhishTankLookupFeed(base_url=lookup_url))
     # 2. OpenPhish Community Feed
     manager.register_feed(OpenPhishFeed())
     return manager

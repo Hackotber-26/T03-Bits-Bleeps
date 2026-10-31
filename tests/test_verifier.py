@@ -1,4 +1,5 @@
 import gzip
+import json
 import os
 import tempfile
 import time
@@ -12,11 +13,13 @@ from threat_manager import (
     LocalListFeed,
     OpenPhishFeed,
     PhishTankFeed,
+    PhishTankLookupFeed,
     RiskAction,
     RiskAssessment,
     RiskLevel,
     ThreatDatabase,
     ThreatIntelligenceManager,
+    create_default_manager,
     extract_domain_from_url,
     get_candidate_domains,
 )
@@ -258,6 +261,113 @@ class TestThreatManagerAndRiskScoring(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0][0], "plain-fallback.com")
         self.assertEqual(mock_urlopen.call_count, 2)
+
+    @staticmethod
+    def _json_response(payload: bytes) -> MagicMock:
+        resp = MagicMock()
+        resp.read.return_value = payload
+        resp.__enter__.return_value = resp
+        return resp
+
+    @patch("urllib.request.urlopen")
+    def test_lookup_feed_bare_url_list(self, mock_urlopen):
+        """GET /urls returning a plain list of URL strings."""
+        mock_urlopen.return_value = self._json_response(json.dumps([
+            "https://one-phish.com/login",
+            "http://two-phish.org/auth",
+        ]).encode("utf-8"))
+
+        feed = PhishTankLookupFeed(base_url="https://lookup.example.com")
+        results = list(feed.fetch_records())
+        self.assertEqual([r[0] for r in results], ["one-phish.com", "two-phish.org"])
+
+        request = mock_urlopen.call_args[0][0]
+        self.assertEqual(request.full_url, "https://lookup.example.com/urls")
+        # Descriptive User-Agent still required for every request.
+        self.assertIn("odikyu-dns-shield", request.get_header("User-agent"))
+
+    @patch("urllib.request.urlopen")
+    def test_lookup_feed_wrapped_entry_objects(self, mock_urlopen):
+        """GET /urls returning {"urls": [{url, phish_id, target}, ...]}."""
+        mock_urlopen.return_value = self._json_response(json.dumps({
+            "urls": [
+                {"url": "https://bank-phish.com/secure", "phish_id": "999", "target": "HDFC"},
+                {"url": "https://bank-phish.com/secure"},  # duplicate domain deduped
+                {"url": "http://other-phish.io/auth", "target": "PayPal"},
+            ],
+        }).encode("utf-8"))
+
+        feed = PhishTankLookupFeed(base_url="https://lookup.example.com")
+        results = list(feed.fetch_records())
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0][0], "bank-phish.com")
+        self.assertIn("HDFC", results[0][1])
+        self.assertIn("999", results[0][1])
+        self.assertEqual(results[1][0], "other-phish.io")
+
+    @patch("urllib.request.urlopen")
+    def test_lookup_feed_url_keyed_mapping(self, mock_urlopen):
+        """GET /urls returning a url-keyed mapping."""
+        mock_urlopen.return_value = self._json_response(json.dumps({
+            "https://mapped-phish.com/x": {"target": "Google", "phish_id": "42"},
+        }).encode("utf-8"))
+
+        feed = PhishTankLookupFeed(base_url="https://lookup.example.com")
+        results = list(feed.fetch_records())
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0][0], "mapped-phish.com")
+        self.assertIn("Google", results[0][1])
+
+    @patch("urllib.request.urlopen")
+    def test_lookup_feed_default_base_url(self, mock_urlopen):
+        mock_urlopen.return_value = self._json_response(b"[]")
+        feed = PhishTankLookupFeed()
+        self.assertEqual(feed.base_url, "https://lookup.odikyu.tech")
+        self.assertEqual(feed.urls_endpoint, "https://lookup.odikyu.tech/urls")
+        list(feed.fetch_records())  # smoke: empty payload imports nothing
+
+    @patch("urllib.request.urlopen")
+    def test_lookup_feed_unrecognized_shape_fails_loudly(self, mock_urlopen):
+        """A non-empty payload we can't parse must raise, not import 0 records."""
+        mock_urlopen.return_value = self._json_response(
+            json.dumps({"weird": {"nested": True}}).encode("utf-8")
+        )
+        feed = PhishTankLookupFeed(base_url="https://lookup.example.com")
+        with self.assertRaises(ValueError):
+            list(feed.fetch_records())
+
+    def test_default_manager_phishtank_source_selection(self):
+        """Lookup instance by default; official bulk feed only with an app key."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = os.path.join(tmp.name, "select.db")
+
+        with patch.dict(os.environ, {"PHISHTANK_API_KEY": ""}, clear=False):
+            os.environ.pop("PHISHTANK_LOOKUP_URL", None)
+            manager = create_default_manager(db_path=db_path)
+            try:
+                self.assertIsInstance(manager.feeds["PhishTank"], PhishTankLookupFeed)
+            finally:
+                manager.close()
+
+        with patch.dict(os.environ, {"PHISHTANK_API_KEY": "KEY123"}, clear=False):
+            manager = create_default_manager(db_path=db_path)
+            try:
+                self.assertIsInstance(manager.feeds["PhishTank"], PhishTankFeed)
+            finally:
+                manager.close()
+
+        with patch.dict(
+            os.environ,
+            {"PHISHTANK_API_KEY": "", "PHISHTANK_LOOKUP_URL": ""},
+            clear=False,
+        ):
+            manager = create_default_manager(db_path=db_path)
+            try:
+                self.assertNotIn("PhishTank", manager.feeds)
+                self.assertIn("OpenPhish", manager.feeds)
+            finally:
+                manager.close()
 
     @patch("urllib.request.urlopen")
     def test_openphish_feed_fetch(self, mock_urlopen):
