@@ -77,6 +77,7 @@ import com.odikyu.app.data.SmsEntry
 import com.odikyu.app.data.SmsRepository
 import com.odikyu.app.data.SmsStore
 import com.odikyu.app.ui.components.Avatar
+import com.odikyu.app.ui.components.Favicon
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -284,7 +285,9 @@ private fun ConversationRow(
 ) {
     val displayName = name ?: conversation.address
     val unread = conversation.unreadCount
-    val hasLink = Links.extract(conversation.last.body).isNotEmpty()
+    val lastLinkDomain = remember(conversation.last.body) {
+        Links.extract(conversation.last.body).firstOrNull()?.let(Links::displayTarget)
+    }
     val preview = buildString {
         if (conversation.last.isOutgoing) append("You: ")
         append(conversation.last.body)
@@ -336,14 +339,9 @@ private fun ConversationRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = true),
                 )
-                if (hasLink) {
+                if (lastLinkDomain != null) {
                     Spacer(Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.Filled.Warning,
-                        contentDescription = "Contains a link",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(16.dp),
-                    )
+                    Favicon(domain = lastLinkDomain, size = 16.dp)
                 }
                 if (unread > 0) {
                     Spacer(Modifier.width(6.dp))
@@ -446,7 +444,7 @@ private fun ConversationDetail(
             }
         }
 
-        Surface(tonalElevation = 1.dp) {
+        Surface {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -658,18 +656,27 @@ private fun LinkWarning(links: List<String>) {
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Link detected — possible phishing",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    text = links.take(3).joinToString("\n") { Links.displayTarget(it) },
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                links.take(3).forEach { link ->
+                    val domain = Links.displayTarget(link)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Favicon(domain = domain, size = 14.dp)
+                        Text(
+                            text = domain,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
     }

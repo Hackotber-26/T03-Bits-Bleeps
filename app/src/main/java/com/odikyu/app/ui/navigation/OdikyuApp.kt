@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -52,7 +53,9 @@ fun OdikyuApp(
                 }
             }
 
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.background,
+            ) {
                 OdikyuTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = currentTab == tab,
