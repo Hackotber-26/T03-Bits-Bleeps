@@ -18,12 +18,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,6 +50,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -84,7 +89,7 @@ import com.odikyu.app.data.SmsRepository
 import com.odikyu.app.data.SmsStore
 import com.odikyu.app.ui.components.Avatar
 import com.odikyu.app.ui.components.CategoryBadge
-import com.odikyu.app.ui.components.CategoryIcon
+import com.odikyu.app.ui.components.CategoryCornerIcon
 import com.odikyu.app.ui.components.Favicon
 import com.odikyu.app.ui.components.FaviconAvatar
 import com.odikyu.app.ui.components.badgeCategory
@@ -326,14 +331,25 @@ private fun ConversationRow(
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (lastLinkDomain != null) {
-            FaviconAvatar(domain = lastLinkDomain, size = 48.dp)
-        } else {
-            Avatar(
-                address = conversation.address,
-                name = name.orEmpty(),
-                size = 48.dp,
-            )
+        Box {
+            if (lastLinkDomain != null) {
+                FaviconAvatar(domain = lastLinkDomain, size = 48.dp)
+            } else {
+                Avatar(
+                    address = conversation.address,
+                    name = name.orEmpty(),
+                    size = 48.dp,
+                )
+            }
+            // Category pin at the card's top-left corner, ringed so it reads on any avatar.
+            if (category != null) {
+                CategoryCornerIcon(
+                    category = category,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(x = (-4).dp, y = (-4).dp),
+                )
+            }
         }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -384,10 +400,6 @@ private fun ConversationRow(
                             fontWeight = FontWeight.Bold,
                         )
                     }
-                }
-                if (category != null) {
-                    Spacer(Modifier.width(10.dp))
-                    CategoryIcon(category = category)
                 }
             }
         }
@@ -477,21 +489,37 @@ private fun ConversationDetail(
             }
         }
 
-        Surface {
+        Surface(tonalElevation = 1.dp) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                // Bottom-aligns so the send button tracks the field as it grows to 4 lines.
+                verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedTextField(
-                    value = body,
-                    onValueChange = { body = it },
-                    placeholder = { Text(stringResource(R.string.message_hint)) },
-                    maxLines = 4,
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.weight(1f),
-                )
+                ) {
+                    OutlinedTextField(
+                        value = body,
+                        onValueChange = { body = it },
+                        placeholder = { Text(stringResource(R.string.message_hint)) },
+                        maxLines = 4,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                        ),
+                    )
+                }
                 FilledIconButton(
                     onClick = {
                         val text = body
@@ -522,6 +550,7 @@ private fun ConversationDetail(
                         }
                     },
                     enabled = body.isNotBlank(),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(Icons.Filled.Send, contentDescription = stringResource(R.string.cd_send))
                 }
@@ -715,9 +744,11 @@ private fun openLink(context: android.content.Context, url: String) {
 }
 
 /**
- * Message body with every link rendered as an inline, tappable chip (favicon + domain).
- * Plain text keeps normal line-breaking; a link chip never wraps mid-chip.
+ * Message body with every link rendered as an inline, tappable chip (favicon + domain)
+ * flowing on the same lines as the surrounding words. Plain words and chips are laid out
+ * like a paragraph: wraps happen at word boundaries, a chip never splits mid-domain.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LinkedBody(body: String, links: List<String>) {
     val context = LocalContext.current
@@ -727,27 +758,37 @@ private fun LinkedBody(body: String, links: List<String>) {
     val chipBackground = MaterialTheme.colorScheme.surfaceContainerHighest
     val chipForeground = MaterialTheme.colorScheme.primary
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
         segments.forEach { segment ->
             when (segment) {
-                is BodySeg.Text -> Text(
-                    text = segment.value,
-                    style = bodyStyle,
-                    softWrap = true,
-                )
+                is BodySeg.Text -> segment.value.split(WORD_SPLIT).forEach { word ->
+                    if (word.isNotEmpty()) {
+                        Text(
+                            text = word,
+                            style = bodyStyle,
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                        )
+                    }
+                }
 
                 is BodySeg.Link -> LinkChips(
                     url = segment.url,
                     style = chipStyle,
                     background = chipBackground,
                     foreground = chipForeground,
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.align(Alignment.CenterVertically),
                     onClick = { openLink(context, segment.url) },
                 )
             }
         }
     }
 }
+
+private val WORD_SPLIT = Regex("\\s+")
 
 /** One clickable link chip: favicon + domain + ↗, sized to its content. */
 @Composable
@@ -766,7 +807,7 @@ private fun LinkChips(
     ) {
         Row(
             modifier = Modifier
-                .height(26.dp)
+                .height(24.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(background)
                 .clickable(onClick = onClick)

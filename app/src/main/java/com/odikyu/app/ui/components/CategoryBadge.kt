@@ -1,11 +1,14 @@
 package com.odikyu.app.ui.components
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -20,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -75,16 +79,24 @@ private fun styleFor(category: MessageCategory): CategoryStyle? {
     }
 }
 
-/** Small category icon for the bottom-right corner of a conversation card. */
+/** Small round badge pinned to the top-left corner of an avatar/card. */
 @Composable
-fun CategoryIcon(category: MessageCategory, modifier: Modifier = Modifier) {
+fun CategoryCornerIcon(category: MessageCategory, modifier: Modifier = Modifier) {
     val style = styleFor(category) ?: return
-    Icon(
-        imageVector = style.icon,
-        contentDescription = stringResource(style.labelRes),
-        tint = style.tint,
-        modifier = modifier.size(18.dp),
-    )
+    Box(
+        modifier = modifier
+            .size(20.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = style.icon,
+            contentDescription = stringResource(style.labelRes),
+            tint = style.tint,
+            modifier = Modifier.size(14.dp),
+        )
+    }
 }
 
 /** Compact colored pill identifying what kind of message this is (thread view). */
