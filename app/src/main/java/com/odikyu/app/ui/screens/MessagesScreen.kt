@@ -59,7 +59,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +70,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import com.odikyu.app.R
 import com.odikyu.app.data.ContactStore
 import com.odikyu.app.data.Conversation
 import com.odikyu.app.data.Conversations
@@ -88,7 +91,7 @@ private val REQUIRED_PERMISSIONS = listOf(
     Manifest.permission.READ_CONTACTS,
 )
 
-private val TIME_FORMAT = DateTimeFormatter.ofPattern("EEE HH:mm")
+private val TIME_FORMAT_PATTERN = "EEE HH:mm"
 
 @Composable
 fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null) {
@@ -115,7 +118,7 @@ fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null)
         if (!grants.values.all { it }) {
             Toast.makeText(
                 context,
-                "Odikyu needs SMS and contacts permissions to work fully",
+                context.getString(R.string.toast_permissions),
                 Toast.LENGTH_LONG,
             ).show()
         }
@@ -201,7 +204,7 @@ fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null)
                 } catch (e: Exception) {
                     Toast.makeText(
                         context,
-                        "Couldn't open the default SMS app picker: ${e.message}",
+                        context.getString(R.string.toast_role_failed, e.message),
                         Toast.LENGTH_LONG,
                     ).show()
                 }
@@ -232,7 +235,7 @@ private fun ConversationList(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Messages",
+                text = stringResource(R.string.messages),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f),
@@ -248,7 +251,7 @@ private fun ConversationList(
 
         if (conversations.isEmpty()) {
             Text(
-                text = "No messages yet. Incoming SMS will show up here as conversations.",
+                text = stringResource(R.string.empty_conversations),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
@@ -280,11 +283,12 @@ private fun ConversationRow(
 ) {
     val displayName = name ?: conversation.address
     val unread = conversation.unreadCount
+    val youPrefix = stringResource(R.string.you_prefix)
     val lastLinkDomain = remember(conversation.last.body) {
         Links.extract(conversation.last.body).firstOrNull()?.let(Links::displayTarget)
     }
     val preview = buildString {
-        if (conversation.last.isOutgoing) append("You: ")
+        if (conversation.last.isOutgoing) append(youPrefix)
         append(conversation.last.body)
     }
 
@@ -406,7 +410,7 @@ private fun ConversationDetail(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
             }
             Avatar(address = address, name = displayName, size = 36.dp)
             Spacer(Modifier.width(10.dp))
@@ -422,7 +426,7 @@ private fun ConversationDetail(
 
         if (messages.isEmpty()) {
             Text(
-                text = "Say hi — messages in this conversation will appear here.",
+                text = stringResource(R.string.empty_thread),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
@@ -453,7 +457,7 @@ private fun ConversationDetail(
                 OutlinedTextField(
                     value = body,
                     onValueChange = { body = it },
-                    placeholder = { Text("Message") },
+                    placeholder = { Text(stringResource(R.string.message_hint)) },
                     maxLines = 4,
                     modifier = Modifier.weight(1f),
                 )
@@ -481,14 +485,14 @@ private fun ConversationDetail(
                         }.onFailure { error ->
                             Toast.makeText(
                                 context,
-                                error.message ?: "Could not send message",
+                                error.message ?: context.getString(R.string.err_send_failed),
                                 Toast.LENGTH_LONG,
                             ).show()
                         }
                     },
                     enabled = body.isNotBlank(),
                 ) {
-                    Icon(Icons.Filled.Send, contentDescription = "Send")
+                    Icon(Icons.Filled.Send, contentDescription = stringResource(R.string.cd_send))
                 }
             }
         }
@@ -515,17 +519,17 @@ private fun DefaultSmsBanner(onMakeDefault: () -> Unit, modifier: Modifier = Mod
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Odikyu isn't your default SMS app yet",
+                    text = stringResource(R.string.default_sms_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Make it the default so all incoming and outgoing SMS go through Odikyu.",
+                    text = stringResource(R.string.default_sms_body),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
             FilledTonalButton(onClick = onMakeDefault) {
-                Text("Make default")
+                Text(stringResource(R.string.default_sms_action))
             }
         }
     }
@@ -534,38 +538,48 @@ private fun DefaultSmsBanner(onMakeDefault: () -> Unit, modifier: Modifier = Mod
 /** Sends an SMS via SmsManager; returns the body to store on success, or an error for the user. */
 private fun sendSms(context: android.content.Context, number: String, body: String): Result<String> {
     if (number.isBlank() || body.isBlank()) {
-        return Result.failure(IllegalArgumentException("Enter a message"))
+        return Result.failure(IllegalArgumentException(context.getString(R.string.err_enter_message)))
     }
     return try {
         val smsManager = context.getSystemService(SmsManager::class.java)
         smsManager.sendTextMessage(number.trim(), null, body, null, null)
         Result.success(body)
     } catch (e: SecurityException) {
-        Result.failure(IllegalStateException("SMS permission was not granted"))
+        Result.failure(IllegalStateException(context.getString(R.string.err_no_permission)))
     } catch (e: IllegalArgumentException) {
-        Result.failure(IllegalStateException("That number doesn't look valid"))
+        Result.failure(IllegalStateException(context.getString(R.string.err_bad_number)))
     }
 }
 
+@Composable
 private fun relativeTime(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp
     return when {
-        diff < 60_000L -> "now"
-        diff < 3_600_000L -> "${diff / 60_000L} min ago"
-        diff < 86_400_000L -> "${diff / 3_600_000L}h ago"
-        diff < 172_800_000L -> "Yesterday"
-        diff < 604_800_000L -> Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("EEE"))
-        else -> Instant.ofEpochMilli(timestamp)
-            .atZone(ZoneId.systemDefault())
-            .format(DateTimeFormatter.ofPattern("d MMM"))
+        diff < 60_000L -> stringResource(R.string.time_now)
+        diff < 3_600_000L -> stringResource(R.string.time_minutes_ago, diff / 60_000L)
+        diff < 86_400_000L -> stringResource(R.string.time_hours_ago, diff / 3_600_000L)
+        diff < 172_800_000L -> stringResource(R.string.time_yesterday)
+        else -> localizedDate(timestamp, if (diff < 604_800_000L) "EEE" else "d MMM")
+    }
+}
+
+/** Date formatted with the user's locale so weekday/month names come out translated. */
+@Composable
+private fun localizedDate(timestamp: Long, pattern: String): String {
+    val locale = LocalConfiguration.current.locales[0]
+    return remember(timestamp, locale, pattern) {
+        DateTimeFormatter.ofPattern(pattern, locale)
+            .format(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()))
     }
 }
 
 @Composable
 private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
-    val time = TIME_FORMAT.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
+    val locale = LocalConfiguration.current.locales[0]
+    val time = remember(entry.timestamp, locale) {
+        DateTimeFormatter.ofPattern(TIME_FORMAT_PATTERN, locale)
+            .format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
+    }
     val links = remember(entry.body) { Links.extract(entry.body) }
 
     Column(
@@ -597,7 +611,11 @@ private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
                 if (showSender) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            text = if (entry.isOutgoing) "You" else "From ${entry.sender}",
+                            text = if (entry.isOutgoing) {
+                                stringResource(R.string.you_label)
+                            } else {
+                                stringResource(R.string.from_label, entry.sender)
+                            },
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -656,7 +674,7 @@ private fun LinkWarning(links: List<String>) {
             )
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Link detected — possible phishing",
+                    text = stringResource(R.string.link_warning),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.SemiBold,
                 )

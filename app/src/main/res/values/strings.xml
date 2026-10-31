@@ -1,3 +1,56 @@
 <resources>
     <string name="app_name">Odikyu</string>
+
+    <!-- Tabs & screen titles -->
+    <string name="messages">Messages</string>
+    <string name="protection">Protection</string>
+    <string name="protection_subtitle">Stops scam and phishing sites before they load on your phone.</string>
+
+    <!-- Default SMS app banner -->
+    <string name="default_sms_title">Odikyu isn\'t your default SMS app yet</string>
+    <string name="default_sms_body">Make it the default so all incoming and outgoing SMS go through Odikyu.</string>
+    <string name="default_sms_action">Make default</string>
+
+    <!-- Empty states -->
+    <string name="empty_conversations">No messages yet. Incoming SMS will show up here as conversations.</string>
+    <string name="empty_thread">Say hi — messages in this conversation will appear here.</string>
+
+    <!-- Composer & navigation -->
+    <string name="message_hint">Message</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_send">Send</string>
+
+    <!-- Bubbles & rows -->
+    <string name="you_prefix">"You: "</string>
+    <string name="you_label">You</string>
+    <string name="from_label">From %1$s</string>
+
+    <!-- Link warning -->
+    <string name="link_warning">Link detected — possible phishing</string>
+
+    <!-- Protection states -->
+    <string name="protection_on">Your browsing is protected</string>
+    <string name="protection_off">Protection is off</string>
+    <string name="protection_checking">Turning on protection…</string>
+    <string name="protection_failed">Couldn\'t turn on protection</string>
+    <string name="pill_protected">You\'re safe to browse</string>
+    <string name="pill_off">Flip the switch to get protected</string>
+    <string name="pill_checking">Checking your connection…</string>
+    <string name="pill_failed">Check your internet and try again</string>
+    <string name="toggle_on">ON</string>
+    <string name="toggle_off">OFF</string>
+
+    <!-- Relative time -->
+    <string name="time_now">now</string>
+    <string name="time_minutes_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$dh ago</string>
+    <string name="time_yesterday">Yesterday</string>
+
+    <!-- Toasts & errors -->
+    <string name="toast_permissions">Odikyu needs SMS and contacts permissions to work fully</string>
+    <string name="toast_role_failed">Couldn\'t open the default SMS app picker: %1$s</string>
+    <string name="err_enter_message">Enter a message</string>
+    <string name="err_no_permission">SMS permission was not granted</string>
+    <string name="err_bad_number">That number doesn\'t look valid</string>
+    <string name="err_send_failed">Could not send message</string>
 </resources>

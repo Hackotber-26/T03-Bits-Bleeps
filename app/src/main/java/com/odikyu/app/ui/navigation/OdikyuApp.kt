@@ -22,16 +22,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import com.odikyu.app.ui.screens.DnsScreen
 import com.odikyu.app.ui.screens.MessagesScreen
 
 enum class OdikyuTab(
-    val title: String,
+    val titleRes: Int,
     val filledIcon: ImageVector,
     val outlinedIcon: ImageVector,
 ) {
-    Messages("Messages", Icons.Filled.Email, Icons.Outlined.Email),
-    Protection("Protection", Icons.Filled.Lock, Icons.Outlined.Lock),
+    Messages(com.odikyu.app.R.string.messages, Icons.Filled.Email, Icons.Outlined.Email),
+    Protection(com.odikyu.app.R.string.protection, Icons.Filled.Lock, Icons.Outlined.Lock),
 }
 
 @Composable
@@ -61,16 +62,17 @@ fun OdikyuApp(
                 windowInsets = WindowInsets(0, 0, 0, 0),
             ) {
                 OdikyuTab.entries.forEach { tab ->
+                    val title = stringResource(tab.titleRes)
                     NavigationBarItem(
                         selected = currentTab == tab,
                         onClick = { currentTab = tab },
                         icon = {
                             Icon(
                                 imageVector = if (currentTab == tab) tab.filledIcon else tab.outlinedIcon,
-                                contentDescription = tab.title,
+                                contentDescription = title,
                             )
                         },
-                        label = { Text(tab.title) },
+                        label = { Text(title) },
                     )
                 }
             }

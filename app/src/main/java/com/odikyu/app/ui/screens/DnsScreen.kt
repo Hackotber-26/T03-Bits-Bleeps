@@ -49,10 +49,12 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.odikyu.app.R
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
@@ -117,13 +119,13 @@ fun DnsScreen(modifier: Modifier = Modifier) {
     ) {
         Spacer(Modifier.height(16.dp))
         Text(
-            text = "Protection",
+            text = stringResource(R.string.protection),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Stops scam and phishing sites before they load on your phone.",
+            text = stringResource(R.string.protection_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -147,10 +149,10 @@ fun DnsScreen(modifier: Modifier = Modifier) {
 
         Text(
             text = when (status) {
-                DohStatus.Protected -> "Your browsing is protected"
-                DohStatus.Off -> "Protection is off"
-                DohStatus.Checking -> "Turning on protection…"
-                DohStatus.Failed -> "Couldn't turn on protection"
+                DohStatus.Protected -> stringResource(R.string.protection_on)
+                DohStatus.Off -> stringResource(R.string.protection_off)
+                DohStatus.Checking -> stringResource(R.string.protection_checking)
+                DohStatus.Failed -> stringResource(R.string.protection_failed)
             },
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
@@ -249,7 +251,7 @@ private fun ProtectionToggle(
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
-            text = if (checked) "ON" else "OFF",
+            text = if (checked) stringResource(R.string.toggle_on) else stringResource(R.string.toggle_off),
             color = Color.White,
             fontWeight = FontWeight.Bold,
             fontSize = 15.sp,
@@ -297,10 +299,10 @@ private fun StatusPill(status: DohStatus) {
             }
             Text(
                 text = when (status) {
-                    DohStatus.Protected -> "You're safe to browse"
-                    DohStatus.Off -> "Flip the switch to get protected"
-                    DohStatus.Checking -> "Checking your connection…"
-                    DohStatus.Failed -> "Check your internet and try again"
+                    DohStatus.Protected -> stringResource(R.string.pill_protected)
+                    DohStatus.Off -> stringResource(R.string.pill_off)
+                    DohStatus.Checking -> stringResource(R.string.pill_checking)
+                    DohStatus.Failed -> stringResource(R.string.pill_failed)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,

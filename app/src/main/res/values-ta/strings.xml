@@ -1,0 +1,46 @@
+<resources>
+    <!-- Tamil (தமிழ்) -->
+    <string name="messages">செய்திகள்</string>
+    <string name="protection">பாதுகாப்பு</string>
+    <string name="protection_subtitle">உங்கள் தொலைபேசியில் ஏற்றுவதற்கு முன்பே மோசடி மற்றும் ஃபிஷிங் தளங்களைத் தடுக்கிறது.</string>
+
+    <string name="default_sms_title">ஒடிக்யூ இன்னும் உங்கள் இயல்புநிலை SMS செயலி அல்ல</string>
+    <string name="default_sms_body">அனைத்து வரும்/செல்லும் SMS-களும் ஒடிக்யூ வழியாக செல்ல அதை இயல்புநிலையாக அமைக்கவும்.</string>
+    <string name="default_sms_action">இயல்புநிலை ஆக்கு</string>
+
+    <string name="empty_conversations">இன்னும் செய்திகள் இல்லை. வரும் SMS இங்கே உரையாடல்களாக தெரியும்.</string>
+    <string name="empty_thread">ஹாய் எழுதுங்கள் — இந்த உரையாடலின் செய்திகள் இங்கே தெரியும்.</string>
+
+    <string name="message_hint">செய்தி</string>
+    <string name="cd_back">பின்</string>
+    <string name="cd_send">அனுப்பு</string>
+
+    <string name="you_prefix">"நீங்கள்: "</string>
+    <string name="you_label">நீங்கள்</string>
+    <string name="from_label">%1$s இலிருந்து</string>
+
+    <string name="link_warning">இணைப்பு கண்டறியப்பட்டது — ஃபிஷிங் ஆபத்து</string>
+
+    <string name="protection_on">உங்கள் உலாவல் பாதுகாப்பாக உள்ளது</string>
+    <string name="protection_off">பாதுகாப்பு அணைக்கப்பட்டுள்ளது</string>
+    <string name="protection_checking">பாதுகாப்பு இயங்குகிறது…</string>
+    <string name="protection_failed">பாதுகாப்பை இயக்க முடியவில்லை</string>
+    <string name="pill_protected">பாதுகாப்பாக உலாவுங்கள்</string>
+    <string name="pill_off">பாதுகாப்பாக இருக்க சுவிட்சை இயக்குங்கள்</string>
+    <string name="pill_checking">உங்கள் இணைப்பு சரிபார்க்கப்படுகிறது…</string>
+    <string name="pill_failed">இணையத்தை சரிபார்த்து மீண்டும் முயற்சிக்கவும்</string>
+    <string name="toggle_on">ஆன்</string>
+    <string name="toggle_off">ஆஃப்</string>
+
+    <string name="time_now">இப்போதே</string>
+    <string name="time_minutes_ago">%1$d நிமிடங்கள் முன்பு</string>
+    <string name="time_hours_ago">%1$d மணி நேரம் முன்பு</string>
+    <string name="time_yesterday">நேற்று</string>
+
+    <string name="toast_permissions">முழுமையாக இயங்க ஒடிக்யூ-வுக்கு SMS, தொடர்புகள் அனுமதி தேவை</string>
+    <string name="toast_role_failed">இயல்புநிலை SMS செயலி தேர்வுத் திரையை திறக்க முடியவில்லை: %1$s</string>
+    <string name="err_enter_message">ஒரு செய்தியை எழுதுங்கள்</string>
+    <string name="err_no_permission">SMS அனுமதி இல்லை</string>
+    <string name="err_bad_number">அந்த எண் சரியாகத் தெரியவில்லை</string>
+    <string name="err_send_failed">செய்தியை அனுப்ப முடியவில்லை</string>
+</resources>
