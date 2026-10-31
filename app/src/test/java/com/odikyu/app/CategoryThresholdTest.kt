@@ -7,30 +7,39 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** Pins the two-threshold surfacing rule in [badgeCategory]. */
+/**
+ * Pins the surfacing rule in [badgeCategory]. Confidence values are real outputs
+ * of the shipped model on real messages from the test device.
+ */
 class CategoryThresholdTest {
 
     @Test
-    fun `low confidence is flagged as suspicious`() {
-        // Uncertainty itself is the warning sign (model README's review rule,
-        // cutoff raised from 0.5 to 0.7).
-        listOf(0.0f, 0.49f, 0.69f).forEach { conf ->
-            val scam = Classification(MessageCategory.TRANSACTIONAL, confidence = conf)
-            assertEquals(MessageCategory.UNSAFE, scam.badgeCategory())
+    fun `model pointing at unsafe is flagged as suspicious`() {
+        // Known scam texts: Banbaloo prize-scam -> UNSAFE 0.54,
+        // Aadhaar-KYC phish -> UNSAFE 0.45.
+        listOf(0.4f, 0.45f, 0.54f, 0.9f).forEach { conf ->
+            assertEquals(
+                MessageCategory.UNSAFE,
+                Classification(MessageCategory.UNSAFE, conf).badgeCategory(),
+            )
         }
     }
 
     @Test
-    fun `mid confidence shows nothing`() {
-        // Between the two cutoffs: not suspicious, not confident — stay quiet.
+    fun `a torn near-uniform unsafe guess stays quiet`() {
+        assertNull(Classification(MessageCategory.UNSAFE, 0.35f).badgeCategory())
+    }
+
+    @Test
+    fun `ambiguity alone is not suspicion`() {
+        // Gov service SMS -> TRANSACTIONAL 0.698, Jio offer -> PROMOTIONAL 0.506,
+        // BigBasket promo -> TRANSACTIONAL 0.49: recognized-but-uncertain = blank.
         listOf(
-            MessageCategory.TRANSACTIONAL,
-            MessageCategory.PROMOTIONAL,
-            MessageCategory.SPAM,
-        ).forEach { category ->
-            assertNull(Classification(category, confidence = 0.7f).badgeCategory())
-            assertNull(Classification(category, confidence = 0.74f).badgeCategory())
-        }
+            Classification(MessageCategory.TRANSACTIONAL, 0.698f),
+            Classification(MessageCategory.PROMOTIONAL, 0.506f),
+            Classification(MessageCategory.TRANSACTIONAL, 0.49f),
+            Classification(MessageCategory.SPAM, 0.6f),
+        ).forEach { assertNull(it.badgeCategory()) }
     }
 
     @Test
@@ -39,7 +48,6 @@ class CategoryThresholdTest {
             MessageCategory.TRANSACTIONAL,
             MessageCategory.PROMOTIONAL,
             MessageCategory.SPAM,
-            MessageCategory.UNSAFE,
         ).forEach { category ->
             assertEquals(
                 category,
@@ -52,6 +60,8 @@ class CategoryThresholdTest {
     fun `confident personal and unclassified stay unbadged`() {
         assertNull(Classification(MessageCategory.PERSONAL, 0.95f).badgeCategory())
         assertNull(Classification(MessageCategory.UNCLASSIFIED, 0.95f).badgeCategory())
+        // "hi harshit" -> UNCLASSIFIED 0.74 on device.
+        assertNull(Classification(MessageCategory.UNCLASSIFIED, 0.74f).badgeCategory())
     }
 
     @Test

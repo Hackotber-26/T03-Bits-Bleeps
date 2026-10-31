@@ -36,20 +36,22 @@ import com.odikyu.app.data.MessageCategory
 /**
  * The verdict worth surfacing on a card — null for a plain, unremarkable message.
  *
- * Two thresholds, deliberately different:
- * - Below [SUSPICIOUS_BELOW] the model isn't sure enough to claim any category, and
- *   uncertainty itself is the warning sign (the model README's review rule, with its
- *   0.5 cutoff raised per product decision) — surface it as Suspicious rather than
- *   staying silent on a possible scam.
- * - Normal categories only show when the model is clearly sure of them
- *   ([CONFIDENT_ABOUT]). In between the two: nothing at all.
+ * - **Suspicious** = the model actively points at `Unsafe`, with a small confidence
+ *   floor ([SUSPICIOUS_MIN]) so a torn near-uniform guess can't red-flag. Mere
+ *   uncertainty is NOT suspicion: a bank SMS the model reads as transactional 0.698
+ *   or a promo at 0.506 is recognized-but-not-sure, and shows nothing.
+ * - **Categories** only show when the model is clearly sure of them
+ *   ([CONFIDENT_ABOUT]); below that, blank — no half-hearted claims.
+ * - `Personal` / `Unclassified` never badge, however confident.
  */
-private const val SUSPICIOUS_BELOW = 0.7f
+private const val SUSPICIOUS_MIN = 0.4f
 private const val CONFIDENT_ABOUT = 0.75f
 
 fun Classification?.badgeCategory(): MessageCategory? {
     val verdict = this ?: return null
-    if (verdict.confidence < SUSPICIOUS_BELOW) return MessageCategory.UNSAFE
+    if (verdict.category == MessageCategory.UNSAFE && verdict.confidence >= SUSPICIOUS_MIN) {
+        return MessageCategory.UNSAFE
+    }
     if (verdict.confidence < CONFIDENT_ABOUT) return null
     return when (verdict.category) {
         MessageCategory.PERSONAL,
