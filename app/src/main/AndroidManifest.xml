@@ -29,6 +29,15 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
+            </intent-filter>
         </activity>
 
         <receiver
@@ -46,22 +55,26 @@
         <receiver
             android:name=".receiver.MmsReceiver"
             android:exported="true"
-            android:permission="android.permission.RECEIVE_WAP_PUSH">
+            android:permission="android.permission.BROADCAST_WAP_PUSH">
             <intent-filter android:priority="1000">
                 <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
                 <data android:mimeType="application/vnd.wap.mms-message" />
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".receiver.RespondViaMessageReceiver"
+        <service
+            android:name=".service.RespondViaMessageService"
             android:exported="true"
             android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
             <intent-filter>
                 <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="sms" />
+                <data android:scheme="smsto" />
+                <data android:scheme="mms" />
+                <data android:scheme="mmsto" />
             </intent-filter>
-        </receiver>
+        </service>
     </application>
 
 </manifest>

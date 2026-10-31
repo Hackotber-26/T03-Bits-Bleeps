@@ -1,6 +1,7 @@
 package com.odikyu.app.ui.screens
 
 import android.Manifest
+import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.database.ContentObserver
@@ -54,6 +55,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import com.odikyu.app.data.Links
 import com.odikyu.app.data.SmsEntry
 import com.odikyu.app.data.SmsRepository
@@ -70,10 +74,10 @@ private val REQUIRED_PERMISSIONS = listOf(
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("EEE HH:mm")
 
 @Composable
-fun MessagesScreen(modifier: Modifier = Modifier) {
+fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null) {
     val context = LocalContext.current
     val messages by SmsRepository.messages.collectAsState()
-    var number by remember { mutableStateOf("") }
+    var number by remember { mutableStateOf(initialNumber.orEmpty()) }
     var body by remember { mutableStateOf("") }
     var isDefault by remember { mutableStateOf(SmsStore.isDefaultSmsApp(context)) }
     val listState = rememberLazyListState()
@@ -81,6 +85,7 @@ fun MessagesScreen(modifier: Modifier = Modifier) {
     /** Re-checks default status and, when default, reloads history from the system provider. */
     fun refresh() {
         val nowDefault = SmsStore.isDefaultSmsApp(context)
+        android.util.Log.i("Odikyu", "refresh: isDefault=$nowDefault")
         isDefault = nowDefault
         if (nowDefault) {
             SmsStore.readAll(context)?.let { SmsRepository.replaceAll(it) }
@@ -124,6 +129,17 @@ fun MessagesScreen(modifier: Modifier = Modifier) {
         onDispose { context.contentResolver.unregisterContentObserver(observer) }
     }
 
+    // Re-check default status whenever the app returns to the foreground (e.g. after the
+    // system "Set as default" dialog closes, whose activity result can race the role update).
+    DisposableEffect(context) {
+        val lifecycleOwner = context as? LifecycleOwner
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refresh()
+        }
+        lifecycleOwner?.lifecycle?.addObserver(observer)
+        onDispose { lifecycleOwner?.lifecycle?.removeObserver(observer) }
+    }
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
@@ -156,11 +172,27 @@ fun MessagesScreen(modifier: Modifier = Modifier) {
         if (!isDefault) {
             DefaultSmsBanner(
                 onMakeDefault = {
-                    changeDefaultLauncher.launch(
-                        Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).apply {
-                            putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName)
+                    try {
+                        val roleManager = context.getSystemService(RoleManager::class.java)
+                        if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_SMS)) {
+                            changeDefaultLauncher.launch(
+                                roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS)
+                            )
+                        } else {
+                            // Legacy fallback for OEM builds without the role service.
+                            changeDefaultLauncher.launch(
+                                Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT).apply {
+                                    putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.packageName)
+                                }
+                            )
                         }
-                    )
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Couldn't open the default SMS app picker: ${e.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp),
             )

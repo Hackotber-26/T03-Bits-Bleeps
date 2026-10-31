@@ -1,5 +1,6 @@
 package com.odikyu.app.data
 
+import android.app.role.RoleManager
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
@@ -11,8 +12,16 @@ import android.provider.Telephony
  */
 object SmsStore {
 
-    fun isDefaultSmsApp(context: Context): Boolean =
-        Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+    /**
+     * True when Odikyu is the default SMS app. Checks the ROLE_SMS holder first — some OEM
+     * builds never sync [Telephony.Sms.getDefaultSmsPackage] (its backing settings key stays
+     * null), so the role is the reliable source of truth.
+     */
+    fun isDefaultSmsApp(context: Context): Boolean {
+        val roleManager = context.getSystemService(RoleManager::class.java)
+        if (roleManager?.isRoleHeld(RoleManager.ROLE_SMS) == true) return true
+        return Telephony.Sms.getDefaultSmsPackage(context) == context.packageName
+    }
 
     /**
      * Looks up the conversation thread id for [address] so stored messages line up into a

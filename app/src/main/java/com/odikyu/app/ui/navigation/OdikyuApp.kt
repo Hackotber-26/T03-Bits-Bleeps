@@ -33,7 +33,10 @@ enum class OdikyuTab(
 }
 
 @Composable
-fun OdikyuApp(modifier: Modifier = Modifier) {
+fun OdikyuApp(
+    modifier: Modifier = Modifier,
+    prefillNumber: String? = null,
+) {
     var currentTab by rememberSaveable { mutableStateOf(OdikyuTab.Messages) }
 
     Scaffold(modifier = modifier) { innerPadding ->
@@ -44,7 +47,7 @@ fun OdikyuApp(modifier: Modifier = Modifier) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 when (currentTab) {
-                    OdikyuTab.Messages -> MessagesScreen()
+                    OdikyuTab.Messages -> MessagesScreen(initialNumber = prefillNumber)
                     OdikyuTab.Protection -> DnsScreen()
                 }
             }
