@@ -78,8 +78,8 @@ fun FaviconAvatar(
                 bitmap = icon!!,
                 contentDescription = domain,
                 modifier = Modifier
-                    .size(size * 0.64f)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .size(size)
+                    .clip(CircleShape),
             )
         } else {
             Text(
