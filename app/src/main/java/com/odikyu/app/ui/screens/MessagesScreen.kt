@@ -380,7 +380,10 @@ private fun ConversationDetail(
 ) {
     val context = LocalContext.current
     var body by remember { mutableStateOf("") }
-    val listState = rememberLazyListState()
+    // Open directly at the newest message — no scroll animation on entry.
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (messages.size - 1).coerceAtLeast(0),
+    )
 
     // Entering the thread clears its unread badge (in memory and in the system store).
     LaunchedEffect(address) {
@@ -390,9 +393,10 @@ private fun ConversationDetail(
         }
     }
 
+    // Keep it pinned to the newest message as messages arrive (instantly, not animated).
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.lastIndex)
+            listState.scrollToItem(messages.lastIndex)
         }
     }
 
