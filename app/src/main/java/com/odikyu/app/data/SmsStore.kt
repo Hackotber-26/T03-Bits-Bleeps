@@ -134,7 +134,8 @@ object SmsStore {
                 }
             }
         }
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        android.util.Log.e("Odikyu", "readAll failed", e)
         null
     }
 

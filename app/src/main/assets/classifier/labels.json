@@ -1,0 +1,21 @@
+{
+  "labels": [
+    "Promotional",
+    "Safe - Transactional",
+    "Safe - Personal",
+    "Unsafe / Suspicious",
+    "Spam",
+    "Unclassified"
+  ],
+  "model": "message_classifier.tflite",
+  "vocab": "vocab.txt",
+  "input_shape": [
+    1,
+    64
+  ],
+  "input_dtype": "int32",
+  "max_len": 64,
+  "max_tokens": 8000,
+  "note": "ids: 0=pad, 1=unk; tokenize with preprocess.py",
+  "trained_on_rows": 6162
+}

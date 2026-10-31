@@ -1,46 +1,62 @@
 <resources>
-    <!-- Tamil (தமிழ்) -->
-    <string name="messages">செய்திகள்</string>
+    <!-- Tamil (தமிழ்) — natural phrasing -->
+    <string name="messages">மெசேஜ்கள்</string>
     <string name="protection">பாதுகாப்பு</string>
-    <string name="protection_subtitle">உங்கள் தொலைபேசியில் ஏற்றுவதற்கு முன்பே மோசடி மற்றும் ஃபிஷிங் தளங்களைத் தடுக்கிறது.</string>
+    <string name="settings">அமைப்புகள்</string>
+    <string name="protection_subtitle">மோசடி மற்றும் ஃபிஷிங் தளங்கள் உங்கள் போனில் திறப்பதற்கு முன்பே தடுக்கிறது.</string>
 
-    <string name="default_sms_title">ஒடிக்யூ இன்னும் உங்கள் இயல்புநிலை SMS செயலி அல்ல</string>
-    <string name="default_sms_body">அனைத்து வரும்/செல்லும் SMS-களும் ஒடிக்யூ வழியாக செல்ல அதை இயல்புநிலையாக அமைக்கவும்.</string>
-    <string name="default_sms_action">இயல்புநிலை ஆக்கு</string>
+    <string name="default_sms_title">Odikyu-வை முதன்மை SMS செயலியாக்குங்கள்</string>
+    <string name="default_sms_body">அனைத்து மெசேஜ்களிலும் மோசடி தடுப்புப் பாதுகாப்பைப் பெற Odikyu-வை இயல்புநிலையாக அமைக்கவும்.</string>
+    <string name="default_sms_action">இயல்புநிலையாக்கு</string>
 
-    <string name="empty_conversations">இன்னும் செய்திகள் இல்லை. வரும் SMS இங்கே உரையாடல்களாக தெரியும்.</string>
-    <string name="empty_thread">ஹாய் எழுதுங்கள் — இந்த உரையாடலின் செய்திகள் இங்கே தெரியும்.</string>
+    <string name="empty_conversations">தற்போது மெசேஜ்கள் இல்லை. புதிய மெசேஜ்கள் இங்கே உரையாடலாகத் தோன்றும்.</string>
+    <string name="empty_thread">வணக்கம் சொல்லுங்கள் — இந்த உரையாடலின் மெசேஜ்கள் இங்கே தெரியும்.</string>
 
-    <string name="message_hint">செய்தி</string>
-    <string name="cd_back">பின்</string>
-    <string name="cd_send">அனுப்பு</string>
+    <string name="message_hint">மெசேஜ் தட்டச்சு செய்யவும்…</string>
+    <string name="cd_back">பின்செல்லவும்</string>
+    <string name="cd_send">மெசேஜ் அனுப்பு</string>
+    <string name="cd_settings">அமைப்புகள்</string>
 
     <string name="you_prefix">"நீங்கள்: "</string>
     <string name="you_label">நீங்கள்</string>
-    <string name="from_label">%1$s இலிருந்து</string>
+    <string name="from_label">%1$s</string>
 
-    <string name="link_warning">இணைப்பு கண்டறியப்பட்டது — ஃபிஷிங் ஆபத்து</string>
+    <string name="link_warning">சந்தேகத்திற்கிடமான இணைப்பு உள்ளது — எச்சரிக்கையுடன் தொடரவும்</string>
 
-    <string name="protection_on">உங்கள் உலாவல் பாதுகாப்பாக உள்ளது</string>
+    <string name="cat_transactional">பரிவர்த்தனை</string>
+    <string name="cat_promotional">விளம்பரம்</string>
+    <string name="cat_unsafe">சந்தேகத்திற்குரிய</string>
+    <string name="cat_spam">ஸ்பேம்</string>
+    <string name="cat_unclassified">மற்றவை</string>
+
+    <string name="protection_on">உங்கள் போன் பாதுகாப்பாக உள்ளது</string>
     <string name="protection_off">பாதுகாப்பு அணைக்கப்பட்டுள்ளது</string>
-    <string name="protection_checking">பாதுகாப்பு இயங்குகிறது…</string>
+    <string name="protection_checking">பாதுகாப்பான இணைப்பு துவங்குகிறது…</string>
     <string name="protection_failed">பாதுகாப்பை இயக்க முடியவில்லை</string>
-    <string name="pill_protected">பாதுகாப்பாக உலாவுங்கள்</string>
-    <string name="pill_off">பாதுகாப்பாக இருக்க சுவிட்சை இயக்குங்கள்</string>
-    <string name="pill_checking">உங்கள் இணைப்பு சரிபார்க்கப்படுகிறது…</string>
+    <string name="pill_protected">மோசடி இணைப்புகளிலிருந்து பாதுகாப்பு</string>
+    <string name="pill_off">மோசடியைத் தவிர்க்க பாதுகாப்பை இயக்கவும்</string>
+    <string name="pill_checking">பாதுகாப்பான இணைப்பு சரிபார்க்கப்படுகிறது…</string>
     <string name="pill_failed">இணையத்தை சரிபார்த்து மீண்டும் முயற்சிக்கவும்</string>
     <string name="toggle_on">ஆன்</string>
     <string name="toggle_off">ஆஃப்</string>
 
     <string name="time_now">இப்போதே</string>
-    <string name="time_minutes_ago">%1$d நிமிடங்கள் முன்பு</string>
-    <string name="time_hours_ago">%1$d மணி நேரம் முன்பு</string>
+    <string name="time_minutes_ago">%1$d நிமிடம் முன்பு</string>
+    <string name="time_hours_ago">%1$d மணிநேரம் முன்பு</string>
     <string name="time_yesterday">நேற்று</string>
 
-    <string name="toast_permissions">முழுமையாக இயங்க ஒடிக்யூ-வுக்கு SMS, தொடர்புகள் அனுமதி தேவை</string>
-    <string name="toast_role_failed">இயல்புநிலை SMS செயலி தேர்வுத் திரையை திறக்க முடியவில்லை: %1$s</string>
-    <string name="err_enter_message">ஒரு செய்தியை எழுதுங்கள்</string>
-    <string name="err_no_permission">SMS அனுமதி இல்லை</string>
-    <string name="err_bad_number">அந்த எண் சரியாகத் தெரியவில்லை</string>
-    <string name="err_send_failed">செய்தியை அனுப்ப முடியவில்லை</string>
+    <string name="settings_title">அமைப்புகள்</string>
+    <string name="settings_language_section">செயலியின் மொழி</string>
+    <string name="settings_language_subtitle">செயலியில் பயன்படுத்த வேண்டிய மொழியைத் தேர்வுசெய்யவும்</string>
+    <string name="lang_system">போனின் மொழிப்படி</string>
+    <string name="settings_about_section">தகவல்</string>
+    <string name="about_tagline">போன் மோசடிகளிலிருந்து பாதுகாக்கும் உங்கள் டிஜிட்டல் பாதுகாவலன்.</string>
+    <string name="app_version">பதிப்பு %1$s</string>
+
+    <string name="toast_permissions">மெசேஜ்களை நிர்வகிக்க SMS, தொடர்புகள் அனுமதி தேவை</string>
+    <string name="toast_role_failed">இயல்புநிலை SMS தேர்வுத் திரையைத் திறக்க முடியவில்லை: %1$s</string>
+    <string name="err_enter_message">தயவுசெய்து ஒரு மெசேஜை எழுதவும்</string>
+    <string name="err_no_permission">SMS அனுப்ப அனுமதி வழங்கப்படவில்லை</string>
+    <string name="err_bad_number">சரியான போன் எண்ணை உள்ளிடவும்</string>
+    <string name="err_send_failed">மெசேஜ் அனுப்ப முடியவில்லை</string>
 </resources>

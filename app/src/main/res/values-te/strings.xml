@@ -1,34 +1,42 @@
 <resources>
-    <!-- Telugu (తెలుగు) -->
+    <!-- Telugu (తెలుగు) — natural phrasing -->
     <string name="messages">సందేశాలు</string>
     <string name="protection">రక్షణ</string>
-    <string name="protection_subtitle">మీ ఫోన్‌లో లోడ్ కాకముందే మోసపూరిత, ఫిషింగ్ సైట్లను నిరోధిస్తుంది.</string>
+    <string name="settings">సెట్టింగ్స్</string>
+    <string name="protection_subtitle">మోసపూరిత, ఫిషింగ్ వెబ్‌సైట్లు ఫోన్‌లో తెరుచుకోకముందే అడ్డుకుంటుంది.</string>
 
-    <string name="default_sms_title">ఒడిక్యూ ఇంకా మీ డిఫాల్ట్ SMS యాప్ కాదు</string>
-    <string name="default_sms_body">అన్ని వచ్చే-వెళ్ళే SMSలు ఒడిక్యూ గుండా వెళ్ళేలా దాన్ని డిఫాల్ట్ చేయండి.</string>
-    <string name="default_sms_action">డిఫాల్ట్ చేయండి</string>
+    <string name="default_sms_title">Odikyu ని మీ ప్రధాన SMS యాప్‌గా చేయండి</string>
+    <string name="default_sms_body">వచ్చే, పోయే అన్ని మెసేజ్‌లలో స్కామ్ రక్షణ పొందడానికి Odikyu ని డిఫాల్ట్‌గా పెట్టండి.</string>
+    <string name="default_sms_action">డిఫాల్ట్‌గా పెట్టండి</string>
 
-    <string name="empty_conversations">ఇంకా సందేశాలు లేవు. వచ్చే SMSలు ఇక్కడ సంభాషణలుగా కనిపిస్తాయి.</string>
-    <string name="empty_thread">హాయ్ అనండి — ఈ సంభాషణలోని సందేశాలు ఇక్కడ కనిపిస్తాయి.</string>
+    <string name="empty_conversations">ప్రస్తుతం ఎలాంటి మెసేజ్‌లు లేవు. కొత్త మెసేజ్‌లు ఇక్కడ సంభాషణలుగా కనిపిస్తాయి.</string>
+    <string name="empty_thread">హలో చెప్పండి — ఈ చాట్‌లోని మెసేజ్‌లు ఇక్కడ కనిపిస్తాయి.</string>
 
-    <string name="message_hint">సందేశం</string>
-    <string name="cd_back">వెనుకకు</string>
-    <string name="cd_send">పంపండి</string>
+    <string name="message_hint">మెసేజ్ రాయండి…</string>
+    <string name="cd_back">వెనక్కి</string>
+    <string name="cd_send">మెసేజ్ పంపు</string>
+    <string name="cd_settings">సెట్టింగ్స్</string>
 
     <string name="you_prefix">"మీరు: "</string>
     <string name="you_label">మీరు</string>
-    <string name="from_label">%1$s నుండి</string>
+    <string name="from_label">%1$s</string>
 
-    <string name="link_warning">లింక్ దొరికింది — ఫిషింగ్ ప్రమాదం</string>
+    <string name="link_warning">అనుమానాస్పద లింక్ ఉంది — జాగ్రత్తగా ఉండండి</string>
 
-    <string name="protection_on">మీ బ్రౌజింగ్ సురక్షితంగా ఉంది</string>
+    <string name="cat_transactional">లావాదేవీ</string>
+    <string name="cat_promotional">ప్రచారం</string>
+    <string name="cat_unsafe">అనుమానాస్పదం</string>
+    <string name="cat_spam">స్పామ్</string>
+    <string name="cat_unclassified">ఇతరాలు</string>
+
+    <string name="protection_on">మీ ఫోన్ సురక్షితంగా ఉంది</string>
     <string name="protection_off">రక్షణ ఆఫ్‌లో ఉంది</string>
-    <string name="protection_checking">రక్షణ ఆన్ అవుతోంది…</string>
-    <string name="protection_failed">రక్షణను ఆన్ చేయలేకపోయాం</string>
-    <string name="pill_protected">సురక్షితంగా బ్రౌజ్ చేయండి</string>
-    <string name="pill_off">సురక్షితంగా ఉండటానికి స్విచ్ ఆన్ చేయండి</string>
-    <string name="pill_checking">మీ కనెక్షన్ తనిఖీ చేస్తున్నాం…</string>
-    <string name="pill_failed">ఇంటర్నెట్ తనిఖీ చేసి మళ్ళీ ప్రయత్నించండి</string>
+    <string name="protection_checking">సురక్షిత కనెక్షన్ మొదలవుతోంది…</string>
+    <string name="protection_failed">రక్షణను ప్రారంభించలేకపోయాం</string>
+    <string name="pill_protected">స్కామ్ లింక్‌ల నుంచి సురక్షితం</string>
+    <string name="pill_off">మోసాల నుంచి రక్షణ కోసం ఆన్ చేయండి</string>
+    <string name="pill_checking">సురక్షిత కనెక్షన్ పరిశీలిస్తున్నాం…</string>
+    <string name="pill_failed">ఇంటర్నెట్ సరిచూసి మళ్ళీ ప్రయత్నించండి</string>
     <string name="toggle_on">ఆన్</string>
     <string name="toggle_off">ఆఫ్</string>
 
@@ -37,10 +45,18 @@
     <string name="time_hours_ago">%1$d గంటల క్రితం</string>
     <string name="time_yesterday">నిన్న</string>
 
-    <string name="toast_permissions">పూర్తిగా పనిచేయడానికి ఒడిక్యూకి SMS, పరిచయాల అనుమతి కావాలి</string>
-    <string name="toast_role_failed">డిఫాల్ట్ SMS యాప్ ఎంపిక స్క్రీన్ తెరవలేకపోయాం: %1$s</string>
-    <string name="err_enter_message">సందేశం రాయండి</string>
-    <string name="err_no_permission">SMS అనుమతి లేదు</string>
-    <string name="err_bad_number">ఆ నంబర్ సరిగా లేదు</string>
-    <string name="err_send_failed">సందేశం పంపలేకపోయాం</string>
+    <string name="settings_title">సెట్టింగ్స్</string>
+    <string name="settings_language_section">యాప్ భాష</string>
+    <string name="settings_language_subtitle">యాప్‌లో ఉపయోగించే భాషను ఎంచుకోండి</string>
+    <string name="lang_system">ఫోన్ భాష ప్రకారం</string>
+    <string name="settings_about_section">వివరాలు</string>
+    <string name="about_tagline">ఫోన్ మోసాల నుంచి కాపాడే మీ నమ్మకమైన డిజిటల్ గార్డ్.</string>
+    <string name="app_version">వెర్షన్ %1$s</string>
+
+    <string name="toast_permissions">మెసేజ్‌ల నిర్వహణకు SMS, కాంటాక్ట్‌ల అనుమతి తప్పనిసరి</string>
+    <string name="toast_role_failed">డిఫాల్ట్ SMS ఎంపిక స్క్రీన్ తెరవలేకపోయాం: %1$s</string>
+    <string name="err_enter_message">దయచేసి మెసేజ్ రాయండి</string>
+    <string name="err_no_permission">SMS పంపే అనుమతి లభించలేదు</string>
+    <string name="err_bad_number">సరైన ఫోన్ నంబర్ నమోదు చేయండి</string>
+    <string name="err_send_failed">మెసేజ్ పంపడం విఫలమైంది</string>
 </resources>

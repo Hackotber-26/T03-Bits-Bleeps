@@ -1,33 +1,41 @@
 <resources>
-    <!-- Marathi (मराठी) -->
-    <string name="messages">संदेश</string>
-    <string name="protection">संरक्षण</string>
-    <string name="protection_subtitle">फोनवर लोड होण्यापूर्वीच फसवणूक आणि फिशिंग साइट्स रोखतो.</string>
+    <!-- Marathi (मराठी) — natural phrasing -->
+    <string name="messages">मेसेज</string>
+    <string name="protection">सुरक्षा</string>
+    <string name="settings">सेटिंग्ज</string>
+    <string name="protection_subtitle">फसव्या आणि फिशिंग वेबसाइट्स फोनवर उघडण्यापूर्वीच थांबवतो.</string>
 
-    <string name="default_sms_title">ओडिक्यू अद्याप आपलं डीफॉल्ट SMS अॅप नाही</string>
-    <string name="default_sms_body">येणारे आणि जाणारे सर्व SMS ओडिक्यूतून जाण्यासाठी ते डीफॉल्ट करा.</string>
-    <string name="default_sms_action">डीफॉल्ट करा</string>
+    <string name="default_sms_title">Odikyu ला मुख्य SMS ॲप करा</string>
+    <string name="default_sms_body">येणाऱ्या आणि जाणाऱ्या सर्व मेसेजवर स्कॅमपासून संरक्षण मिळवण्यासाठी Odikyu ला डिफॉल्ट करा.</string>
+    <string name="default_sms_action">डिफॉल्ट सेट करा</string>
 
-    <string name="empty_conversations">अद्याप कोणतेही संदेश नाहीत. येणारे SMS येथे संभाषणांच्या स्वरूपात दिसतील.</string>
-    <string name="empty_thread">हाय लिहा — या संभाषणातील संदेश येथे दिसतील.</string>
+    <string name="empty_conversations">सध्या कोणतेही मेसेज नाहीत. येणारे मेसेज येथे संभाषणासारखे दिसतील.</string>
+    <string name="empty_thread">हाय म्हणा — या चॅटमधील सर्व मेसेज येथे दिसतील.</string>
 
-    <string name="message_hint">संदेश</string>
-    <string name="cd_back">मागे</string>
-    <string name="cd_send">पाठवा</string>
+    <string name="message_hint">मेसेज लिहा…</string>
+    <string name="cd_back">मागे जा</string>
+    <string name="cd_send">मेसेज पाठवा</string>
+    <string name="cd_settings">सेटिंग्ज</string>
 
     <string name="you_prefix">"तुम्ही: "</string>
     <string name="you_label">तुम्ही</string>
-    <string name="from_label">%1$s कडून</string>
+    <string name="from_label">%1$s</string>
 
-    <string name="link_warning">लिंक सापडली — फिशिंगचा धोका</string>
+    <string name="link_warning">संशयास्पद लिंक आढळली — सावध राहा</string>
 
-    <string name="protection_on">तुमचं ब्राउझिंग सुरक्षित आहे</string>
-    <string name="protection_off">संरक्षण बंद आहे</string>
-    <string name="protection_checking">संरक्षण चालू होत आहे…</string>
-    <string name="protection_failed">संरक्षण चालू करता आले नाही</string>
-    <string name="pill_protected">सुरक्षितपणे ब्राउझ करा</string>
-    <string name="pill_off">सुरक्षित राहण्यासाठी स्विच चालू करा</string>
-    <string name="pill_checking">तुमची कनेक्टिव्हिती तपासली जात आहे…</string>
+    <string name="cat_transactional">व्यवहार</string>
+    <string name="cat_promotional">जाहिरात</string>
+    <string name="cat_unsafe">संशयास्पद</string>
+    <string name="cat_spam">स्पॅम</string>
+    <string name="cat_unclassified">इतर</string>
+
+    <string name="protection_on">तुमचा फोन सुरक्षित आहे</string>
+    <string name="protection_off">सुरक्षा बंद आहे</string>
+    <string name="protection_checking">सुरक्षित कनेक्शन सुरू होत आहे…</string>
+    <string name="protection_failed">सुरक्षा सुरू करता आली नाही</string>
+    <string name="pill_protected">स्कॅम लिंकपासून सुरक्षित</string>
+    <string name="pill_off">फसवणुकीपासून वाचण्यासाठी सुरक्षा चालू करा</string>
+    <string name="pill_checking">कनेक्शन तपासत आहोत…</string>
     <string name="pill_failed">इंटरनेट तपासा आणि पुन्हा प्रयत्न करा</string>
     <string name="toggle_on">चालू</string>
     <string name="toggle_off">बंद</string>
@@ -37,10 +45,18 @@
     <string name="time_hours_ago">%1$d तासांपूर्वी</string>
     <string name="time_yesterday">काल</string>
 
-    <string name="toast_permissions">पूर्णपणे चालवण्यासाठी ओडिक्यूला SMS आणि संपर्कांची परवानगी हवी</string>
-    <string name="toast_role_failed">डीफॉल्ट SMS अॅप निवडणारी स्क्रीन उघडू शकली नाही: %1$s</string>
-    <string name="err_enter_message">संदेश लिहा</string>
-    <string name="err_no_permission">SMS परवानगी मिळाली नाही</string>
-    <string name="err_bad_number">हा क्रमांक योग्य वाटत नाही</string>
-    <string name="err_send_failed">संदेश पाठवता आला नाही</string>
+    <string name="settings_title">सेटिंग्ज</string>
+    <string name="settings_language_section">ॲपची भाषा</string>
+    <string name="settings_language_subtitle">ॲपमध्ये वापरण्यासाठी भाषा निवडा</string>
+    <string name="lang_system">फोनच्या भाषेनुसार</string>
+    <string name="settings_about_section">माहिती</string>
+    <string name="about_tagline">फोनवरील फसवणुकीपासून तुमचे रक्षण करणारा डिजिटल बॉडीगार्ड.</string>
+    <string name="app_version">आवृत्ती %1$s</string>
+
+    <string name="toast_permissions">मेसेज व्यवस्थापनासाठी SMS आणि संपर्कांची परवानगी आवश्यक आहे</string>
+    <string name="toast_role_failed">डिफॉल्ट SMS निवडण्याची स्क्रीन उघडू शकली नाही: %1$s</string>
+    <string name="err_enter_message">कृपया मेसेज लिहा</string>
+    <string name="err_no_permission">SMS परवानगी मिळालेली नाही</string>
+    <string name="err_bad_number">कृपया योग्य फोन नंबर टाका</string>
+    <string name="err_send_failed">मेसेज पाठवता आला नाही</string>
 </resources>

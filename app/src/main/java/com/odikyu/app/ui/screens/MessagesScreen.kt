@@ -53,6 +53,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -74,16 +75,24 @@ import com.odikyu.app.R
 import com.odikyu.app.data.ContactStore
 import com.odikyu.app.data.Conversation
 import com.odikyu.app.data.Conversations
+import com.odikyu.app.data.Classification
 import com.odikyu.app.data.Links
+import com.odikyu.app.data.MessageCategory
+import com.odikyu.app.data.MessageClassifier
 import com.odikyu.app.data.SmsEntry
 import com.odikyu.app.data.SmsRepository
 import com.odikyu.app.data.SmsStore
 import com.odikyu.app.ui.components.Avatar
+import com.odikyu.app.ui.components.CategoryBadge
+import com.odikyu.app.ui.components.CategoryIcon
 import com.odikyu.app.ui.components.Favicon
 import com.odikyu.app.ui.components.FaviconAvatar
+import com.odikyu.app.ui.components.badgeCategory
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private val REQUIRED_PERMISSIONS = listOf(
     Manifest.permission.SEND_SMS,
@@ -168,6 +177,19 @@ fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null)
         ContactStore.resolve(context, addresses)
     }
 
+    val conversations = remember(messages) { Conversations.group(messages) }
+
+    // Classify each conversation's latest message off the main thread; keyed by conversation
+    // key so rows just look up their verdict. Cache in the classifier makes re-runs cheap.
+    val classifications by produceState<Map<String, Classification>>(emptyMap(), conversations) {
+        value = withContext(Dispatchers.IO) {
+            conversations.mapNotNull { conversation ->
+                MessageClassifier.classify(context, conversation.last.body)
+                    ?.let { conversation.key to it }
+            }.toMap()
+        }
+    }
+
     if (openAddress.isNotBlank()) {
         BackHandler { openAddress = "" }
         ConversationDetail(
@@ -182,7 +204,8 @@ fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null)
         )
     } else {
         ConversationList(
-            conversations = remember(messages) { Conversations.group(messages) },
+            conversations = conversations,
+            classifications = classifications,
             contacts = contacts,
             isDefault = isDefault,
             onOpen = { openAddress = it },
@@ -221,6 +244,7 @@ fun MessagesScreen(modifier: Modifier = Modifier, initialNumber: String? = null)
 @Composable
 private fun ConversationList(
     conversations: List<Conversation>,
+    classifications: Map<String, Classification>,
     contacts: Map<String, com.odikyu.app.data.ContactInfo>,
     isDefault: Boolean,
     onOpen: (String) -> Unit,
@@ -268,6 +292,7 @@ private fun ConversationList(
                 ConversationRow(
                     conversation = conversation,
                     name = contacts[conversation.address]?.name,
+                    classification = classifications[conversation.key],
                     onClick = { onOpen(conversation.address) },
                 )
             }
@@ -279,11 +304,13 @@ private fun ConversationList(
 private fun ConversationRow(
     conversation: Conversation,
     name: String?,
+    classification: Classification?,
     onClick: () -> Unit,
 ) {
     val displayName = name ?: conversation.address
     val unread = conversation.unreadCount
     val youPrefix = stringResource(R.string.you_prefix)
+    val category = classification.badgeCategory()
     val lastLinkDomain = remember(conversation.last.body) {
         Links.extract(conversation.last.body).firstOrNull()?.let(Links::displayTarget)
     }
@@ -357,6 +384,10 @@ private fun ConversationRow(
                             fontWeight = FontWeight.Bold,
                         )
                     }
+                }
+                if (category != null) {
+                    Spacer(Modifier.width(10.dp))
+                    CategoryIcon(category = category)
                 }
             }
         }
@@ -575,12 +606,23 @@ private fun localizedDate(timestamp: Long, pattern: String): String {
 
 @Composable
 private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
+    val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     val time = remember(entry.timestamp, locale) {
         DateTimeFormatter.ofPattern(TIME_FORMAT_PATTERN, locale)
             .format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
     }
     val links = remember(entry.body) { Links.extract(entry.body) }
+    // Only incoming messages get classified — outgoing ones are your own words.
+    val classification by produceState<Classification?>(initialValue = null, entry.body) {
+        if (!entry.isOutgoing) {
+            value = withContext(Dispatchers.IO) {
+                MessageClassifier.classify(context, entry.body)
+            }
+        }
+    }
+    val category = classification.badgeCategory()
+    val isSuspicious = category == MessageCategory.UNSAFE
 
     Column(
         modifier = Modifier
@@ -589,15 +631,16 @@ private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
         horizontalAlignment = if (entry.isOutgoing) Alignment.End else Alignment.Start,
     ) {
         Surface(
-            color = if (entry.isOutgoing) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerHighest
+            color = when {
+                entry.isOutgoing -> MaterialTheme.colorScheme.primaryContainer
+                // Suspicious messages wear the same warning red as the Protection screen.
+                isSuspicious -> MaterialTheme.colorScheme.errorContainer
+                else -> MaterialTheme.colorScheme.surfaceContainerHighest
             },
-            contentColor = if (entry.isOutgoing) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurface
+            contentColor = when {
+                entry.isOutgoing -> MaterialTheme.colorScheme.onPrimaryContainer
+                isSuspicious -> MaterialTheme.colorScheme.onErrorContainer
+                else -> MaterialTheme.colorScheme.onSurface
             },
             shape = RoundedCornerShape(
                 topStart = 16.dp,
@@ -645,6 +688,10 @@ private fun MessageBubble(entry: SmsEntry, showSender: Boolean = true) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp),
             )
+        }
+
+        if (category != null) {
+            CategoryBadge(category = category, modifier = Modifier.padding(top = 2.dp))
         }
 
         if (links.isNotEmpty()) {

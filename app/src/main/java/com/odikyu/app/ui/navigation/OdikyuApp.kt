@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -25,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.odikyu.app.ui.screens.DnsScreen
 import com.odikyu.app.ui.screens.MessagesScreen
+import com.odikyu.app.ui.screens.SettingsScreen
 
 enum class OdikyuTab(
     val titleRes: Int,
@@ -33,6 +36,7 @@ enum class OdikyuTab(
 ) {
     Messages(com.odikyu.app.R.string.messages, Icons.Filled.Email, Icons.Outlined.Email),
     Protection(com.odikyu.app.R.string.protection, Icons.Filled.Lock, Icons.Outlined.Lock),
+    Settings(com.odikyu.app.R.string.settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 }
 
 @Composable
@@ -52,6 +56,7 @@ fun OdikyuApp(
                 when (currentTab) {
                     OdikyuTab.Messages -> MessagesScreen(initialNumber = prefillNumber)
                     OdikyuTab.Protection -> DnsScreen()
+                    OdikyuTab.Settings -> SettingsScreen()
                 }
             }
 

@@ -1,46 +1,62 @@
 <resources>
-    <!-- Bengali (বাংলা) -->
-    <string name="messages">বার্তা</string>
+    <!-- Bengali (বাংলা) — natural colloquial phrasing -->
+    <string name="messages">মেসেজ</string>
     <string name="protection">সুরক্ষা</string>
-    <string name="protection_subtitle">আপনার ফোনে লোড হওয়ার আগেই প্রতারণা ও ফিশিং সাইট ব্লক করে।</string>
+    <string name="settings">সেটিংস</string>
+    <string name="protection_subtitle">প্রতারণামূলক ও ফিশিং ওয়েবসাইট ফোনে খোলার আগেই আটকে দেয়।</string>
 
-    <string name="default_sms_title">ওডিকিউ এখনো আপনার ডিফল্ট SMS অ্যাপ নয়</string>
-    <string name="default_sms_body">সব আসা-যাওয়া SMS ওডিকিউ দিয়ে যেতে এটিকে ডিফল্ট করুন।</string>
-    <string name="default_sms_action">ডিফল্ট করুন</string>
+    <string name="default_sms_title">Odikyu-কে প্রধান SMS অ্যাপ করুন</string>
+    <string name="default_sms_body">সব আসা-যাওয়া মেসেজে প্রতারণা থেকে বাঁচতে Odikyu-কে ডিফল্ট হিসেবে সেট করুন।</string>
+    <string name="default_sms_action">ডিফল্ট সেট করুন</string>
 
-    <string name="empty_conversations">এখনো কোনো বার্তা নেই। আসা SMS এখানে কথোপকথন হিসেবে দেখা যাবে।</string>
-    <string name="empty_thread">হাই লিখুন — এই কথোপকথনের বার্তাগুলি এখানে দেখা যাবে।</string>
+    <string name="empty_conversations">এখনো কোনো মেসেজ নেই। নতুন মেসেজ এখানে চ্যাট আকারে দেখাবে।</string>
+    <string name="empty_thread">হাই বলুন — এই চ্যাটের সব মেসেজ এখানে দেখা যাবে।</string>
 
-    <string name="message_hint">বার্তা</string>
-    <string name="cd_back">ফিরে যান</string>
-    <string name="cd_send">পাঠান</string>
+    <string name="message_hint">মেসেজ লিখুন…</string>
+    <string name="cd_back">পেছনে যান</string>
+    <string name="cd_send">মেসেজ পাঠান</string>
+    <string name="cd_settings">সেটিংস</string>
 
     <string name="you_prefix">"আপনি: "</string>
     <string name="you_label">আপনি</string>
-    <string name="from_label">%1$s থেকে</string>
+    <string name="from_label">%1$s</string>
 
-    <string name="link_warning">লিংক পাওয়া গেছে — ফিশিংয়ের ঝুঁকি</string>
+    <string name="link_warning">সন্দেহজনক লিংক পাওয়া গেছে — সাবধানে থাকুন</string>
 
-    <string name="protection_on">আপনার ব্রাউজিং সুরক্ষিত</string>
+    <string name="cat_transactional">লেনদেন</string>
+    <string name="cat_promotional">বিজ্ঞাপন</string>
+    <string name="cat_unsafe">সন্দেহজনক</string>
+    <string name="cat_spam">স্প্যাম</string>
+    <string name="cat_unclassified">অন্যান্য</string>
+
+    <string name="protection_on">আপনার ফোন সুরক্ষিত</string>
     <string name="protection_off">সুরক্ষা বন্ধ আছে</string>
-    <string name="protection_checking">সুরক্ষা চালু হচ্ছে…</string>
-    <string name="protection_failed">সুরক্ষা চালু করা যায়নি</string>
-    <string name="pill_protected">নিরাপদে ব্রাউজ করুন</string>
-    <string name="pill_off">সুরক্ষিত থাকতে সুইচ চালু করুন</string>
-    <string name="pill_checking">আপনার সংযোগ পরীক্ষা করা হচ্ছে…</string>
-    <string name="pill_failed">ইন্টারনেট পরীক্ষা করে আবার চেষ্টা করুন</string>
+    <string name="protection_checking">নিরাপদ সংযোগ তৈরি হচ্ছে…</string>
+    <string name="protection_failed">সুরক্ষা চালু করা গেল না</string>
+    <string name="pill_protected">স্ক্যাম লিংক থেকে সুরক্ষিত</string>
+    <string name="pill_off">প্রতারণা এড়াতে সুরক্ষা চালু করুন</string>
+    <string name="pill_checking">সংযোগ পরীক্ষা করা হচ্ছে…</string>
+    <string name="pill_failed">ইন্টারনেট দেখে আবার চেষ্টা করুন</string>
     <string name="toggle_on">চালু</string>
     <string name="toggle_off">বন্ধ</string>
 
-    <string name="time_now">এখনই</string>
+    <string name="time_now">এইমাত্র</string>
     <string name="time_minutes_ago">%1$d মিনিট আগে</string>
     <string name="time_hours_ago">%1$d ঘণ্টা আগে</string>
     <string name="time_yesterday">গতকাল</string>
 
-    <string name="toast_permissions">পুরোপরি কাজ করতে ওডিকিউকে SMS ও কন্টাক্টের অনুমতি দরকার</string>
-    <string name="toast_role_failed">ডিফল্ট SMS অ্যাপ বেছে নেওয়ার স্ক্রিন খোলা যায়নি: %1$s</string>
-    <string name="err_enter_message">একটি বার্তা লিখুন</string>
-    <string name="err_no_permission">SMS অনুমতি পাওয়া যায়নি</string>
-    <string name="err_bad_number">এই নম্বরটি সঠিক মনে হচ্ছে না</string>
-    <string name="err_send_failed">বার্তা পাঠানো যায়নি</string>
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_language_section">অ্যাপের ভাষা</string>
+    <string name="settings_language_subtitle">অ্যাপে যে ভাষা ব্যবহার করতে চান তা বেছে নিন</string>
+    <string name="lang_system">ফোনের ভাষার সাথে মিলিয়ে</string>
+    <string name="settings_about_section">অ্যাপের তথ্য</string>
+    <string name="about_tagline">ফোনের প্রতারণা রুখতে আপনার নির্ভরযোগ্য ডিজিটাল বডিগার্ড।</string>
+    <string name="app_version">ভার্সন %1$s</string>
+
+    <string name="toast_permissions">মেসেজ পরিচালনা করতে SMS ও কন্ট্যাক্টের অনুমতি প্রয়োজন</string>
+    <string name="toast_role_failed">ডিফল্ট SMS বাছার স্ক্রিন খোলা যায়নি: %1$s</string>
+    <string name="err_enter_message">অনুগ্রহ করে একটি মেসেজ লিখুন</string>
+    <string name="err_no_permission">SMS পাঠানোর অনুমতি দেওয়া হয়নি</string>
+    <string name="err_bad_number">সঠিক ফোন নম্বর দিন</string>
+    <string name="err_send_failed">মেসেজ পাঠানো গেল না</string>
 </resources>
