@@ -132,7 +132,49 @@ class TestBlockPageServer(unittest.TestCase):
         body = resp.read().decode("utf-8")
         self.assertIn("Odikyu DNS Shield", body)
         self.assertIn("Threat Intelligence & AI Inspection Console", body)
+        self.assertIn("Live DNS-over-HTTPS (DoH) Endpoint", body)
         conn.close()
+
+    def test_doh_post_blocked_domain(self):
+        # DNS wire query for malicious-phish.xyz (Type A)
+        qname = dns_proxy.build_name("malicious-phish.xyz")
+        query = (
+            b"\xab\xcd"  # TID
+            b"\x01\x00"  # Flags (RD=1)
+            b"\x00\x01\x00\x00\x00\x00\x00\x00"
+            + qname +
+            b"\x00\x01\x00\x01"
+        )
+        url = f"http://127.0.0.1:{self.port}/dns-query"
+        req = urllib.request.Request(
+            url,
+            data=query,
+            headers={"Content-Type": "application/dns-message"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(resp.headers.get("Content-Type"), "application/dns-message")
+            resp_data = resp.read()
+            self.assertGreater(len(resp_data), len(query))
+            # Should answer with BLOCK_PAGE_IP
+            self.assertIn(config.BLOCK_PAGE_IP.encode("ascii") if config.BLOCK_PAGE_IP != "127.0.0.1" else b"\x7f\x00\x00\x01", resp_data)
+
+    def test_doh_get_query(self):
+        import base64
+        qname = dns_proxy.build_name("malicious-phish.xyz")
+        query = (
+            b"\x12\x34\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00"
+            + qname +
+            b"\x00\x01\x00\x01"
+        )
+        b64 = base64.urlsafe_b64encode(query).decode("ascii").rstrip("=")
+        url = f"http://127.0.0.1:{self.port}/dns-query?dns={b64}"
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            self.assertEqual(resp.status, 200)
+            self.assertEqual(resp.headers.get("Content-Type"), "application/dns-message")
+            resp_data = resp.read()
+            self.assertGreater(len(resp_data), 0)
 
 
 class TestDNSProxyIntegration(unittest.TestCase):

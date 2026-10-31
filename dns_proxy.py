@@ -91,7 +91,17 @@ SSL_CONTEXT = _make_ssl_context()
 # Threat Intelligence Manager & AI Inspection Queue
 # ---------------------------------------------------------------------------
 
-THREAT_MANAGER = create_default_manager(db_path=config.THREAT_DB_PATH)
+THREAT_MANAGER = block_page_server.get_threat_manager()
+
+
+def get_threat_manager() -> ThreatIntelligenceManager:
+    return block_page_server.get_threat_manager()
+
+
+def set_threat_manager(tm: ThreatIntelligenceManager) -> None:
+    global THREAT_MANAGER
+    THREAT_MANAGER = tm
+    block_page_server.set_threat_manager(tm)
 
 
 class BackgroundAIInspectionQueue:
@@ -162,12 +172,12 @@ AI_QUEUE = BackgroundAIInspectionQueue(THREAT_MANAGER)
 
 def check_domain(domain: str) -> RiskAssessment:
     """Fast local risk assessment (< 0.1ms)."""
-    return THREAT_MANAGER.check_domain(domain)
+    return get_threat_manager().check_domain(domain)
 
 
 def is_blocked(domain: str) -> bool:
     """Backward-compatible boolean check."""
-    return THREAT_MANAGER.is_blocked(domain)
+    return get_threat_manager().is_blocked(domain)
 
 
 # ---------------------------------------------------------------------------
@@ -308,28 +318,45 @@ def show_security_alert(client_ip: str, domain: str, query_type: str, assessment
 # Per-Request Handler
 # ---------------------------------------------------------------------------
 
-def handle_request(data: bytes, client_addr):
-    """Process incoming DNS query."""
+def build_servfail_response(query: bytes) -> bytes:
+    """Build a standard DNS SERVFAIL (RCODE=2) response packet."""
+    tid = query[:2]
+    flags = struct.unpack("!H", query[2:4])[0] if len(query) >= 4 else 0
+    resp_flags = (flags & 0x7900) | 0x8000 | 0x0002
+    try:
+        domain, q_end = parse_query_name(query, 12)
+        question = query[12:q_end + 4]
+        return tid + struct.pack("!HHHHH", resp_flags, 1, 0, 0, 0) + question
+    except Exception:
+        return tid + struct.pack("!HHHHH", resp_flags, 0, 0, 0, 0)
+
+
+def process_dns_packet(data: bytes, client_ip: str = "127.0.0.1") -> bytes | None:
+    """
+    Core DNS query processing engine: checks threats, invokes AI queue, builds response.
+    Reused across UDP port 53 listener and RFC 8484 DNS-over-HTTPS (DoH) web server.
+    """
     try:
         domain, q_end = parse_query_name(data, 12)
         qtype_num = struct.unpack("!H", data[q_end + 2:q_end + 4])[0]
         qtype = {1: "A", 28: "AAAA", 5: "CNAME", 15: "MX", 16: "TXT"}.get(qtype_num, f"TYPE{qtype_num}")
     except (IndexError, struct.error):
-        return
+        return None
 
     # Fast Rule-Based Risk Assessment (< 0.1ms)
     assessment = check_domain(domain)
+    tm = get_threat_manager()
 
     if assessment.action == RiskAction.BLOCK:
         # HIGH RISK: Block & Sinkhole to Block Page
-        show_security_alert(client_addr[0], domain, qtype, assessment)
-        THREAT_MANAGER.log_security_event(client_addr[0], domain, qtype, assessment)
-        response = build_blocked_response(data, BLOCKED_IP)
+        show_security_alert(client_ip, domain, qtype, assessment)
+        tm.log_security_event(client_ip, domain, qtype, assessment)
+        return build_blocked_response(data, BLOCKED_IP)
 
     elif assessment.action == RiskAction.CAUTION:
         # SUSPICIOUS: Caution advised
-        show_security_alert(client_addr[0], domain, qtype, assessment)
-        THREAT_MANAGER.log_security_event(client_addr[0], domain, qtype, assessment)
+        show_security_alert(client_ip, domain, qtype, assessment)
+        tm.log_security_event(client_ip, domain, qtype, assessment)
 
         # Trigger background Gemma AI inspection if not yet inspected
         if config.AUTO_INSPECT_SUSPICIOUS and config.AI_INSPECTION_ENABLED:
@@ -338,23 +365,26 @@ def handle_request(data: bytes, client_addr):
 
         if config.BLOCK_SUSPICIOUS:
             print(f"[!] BLOCK_SUSPICIOUS active: Redirecting suspicious '{domain}' to Warning Page ({BLOCKED_IP})")
-            response = build_blocked_response(data, BLOCKED_IP)
+            return build_blocked_response(data, BLOCKED_IP)
         else:
-            response = forward_to_upstream(data)
-            if response is None:
-                return
+            resp = forward_to_upstream(data)
+            return resp if resp is not None else build_servfail_response(data)
 
     else:
         # LOW RISK: Forward to upstream DoH
-        print(f"[->] Forwarding {domain} ({qtype}) from {client_addr[0]} [LOW RISK]")
-        response = forward_to_upstream(data)
-        if response is None:
-            return
+        print(f"[->] Forwarding {domain} ({qtype}) from {client_ip} [LOW RISK]")
+        resp = forward_to_upstream(data)
+        return resp if resp is not None else build_servfail_response(data)
 
-    try:
-        server.sendto(response, client_addr)
-    except OSError as exc:
-        print(f"[!] Failed to send response to {client_addr}: {exc}")
+
+def handle_request(data: bytes, client_addr):
+    """Process incoming UDP DNS query."""
+    response = process_dns_packet(data, client_addr[0])
+    if response:
+        try:
+            server.sendto(response, client_addr)
+        except OSError as exc:
+            print(f"[!] Failed to send response to {client_addr}: {exc}")
 
 
 # ---------------------------------------------------------------------------

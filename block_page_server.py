@@ -19,6 +19,7 @@ Endpoints:
 
 from __future__ import annotations
 
+import base64
 import html
 import http.server
 import json
@@ -583,6 +584,26 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
             </div>
         </div>
 
+        <div class="card" style="border: 1px solid var(--accent-cyan); background: linear-gradient(180deg, #131c2e 0%, var(--bg-panel) 100%);">
+            <h2 style="color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
+                ⚡ Live DNS-over-HTTPS (DoH) Endpoint
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+                Odikyu DNS Shield is fully deployed as a secure <strong>RFC 8484 DNS-over-HTTPS (DoH) proxy</strong>. Enter this endpoint into Chrome, Edge, Firefox, or Android to encrypt all DNS queries and block scams globally:
+            </p>
+            <div style="background: #080c14; padding: 12px 16px; border-radius: 8px; font-family: monospace; font-size: 15px; color: #22d3ee; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b; margin-bottom: 14px;">
+                <span id="dohUrl">https://{server_host}/dns-query</span>
+                <button class="btn" style="padding: 8px 16px; font-size: 12px;" onclick="navigator.clipboard.writeText(document.getElementById('dohUrl').innerText); alert('Copied DoH URL to clipboard!');">Copy URL</button>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                <strong>Quick Setup:</strong><br>
+                &bull; <strong>Chrome / Brave:</strong> Settings &rarr; Privacy & security &rarr; Use secure DNS &rarr; Custom &rarr; Paste URL.<br>
+                &bull; <strong>Edge:</strong> Settings &rarr; Privacy, search & services &rarr; Use secure DNS &rarr; Choose provider &rarr; Paste URL.<br>
+                &bull; <strong>Firefox:</strong> Settings &rarr; Privacy & Security &rarr; DNS over HTTPS &rarr; Max Protection &rarr; Custom.<br>
+                &bull; <strong>Android App:</strong> Direct endpoint for <code>odikyuapp</code> encrypted DNS protection.
+            </div>
+        </div>
+
         <div class="card">
             <h2>🔍 Threat Intelligence & AI Inspection Console</h2>
             <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 14px;">
@@ -675,10 +696,83 @@ class OdikyuBlockPageHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.end_headers()
 
+    def do_OPTIONS(self) -> None:
+        """Handle CORS pre-flight requests for DoH."""
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+        self.end_headers()
+
+    def do_POST(self) -> None:
+        """Handle RFC 8484 DNS-over-HTTPS (DoH) POST queries."""
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
+
+        if path == "/dns-query":
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len <= 0 or content_len > 4096:
+                self.send_response(400)
+                self.end_headers()
+                return
+
+            query_data = self.rfile.read(content_len)
+            client_ip = self.headers.get("X-Forwarded-For", self.address_string()).split(",")[0].strip()
+
+            import dns_proxy
+            response_data = dns_proxy.process_dns_packet(query_data, client_ip)
+            if response_data is None:
+                self.send_response(502)
+                self.end_headers()
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/dns-message")
+            self.send_header("Content-Length", str(len(response_data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(response_data)
+            return
+
+        self.send_response(404)
+        self.end_headers()
+
     def do_GET(self) -> None:
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
+
+        # RFC 8484 DNS-over-HTTPS (DoH) GET query with ?dns=<base64url>
+        if path == "/dns-query":
+            dns_b64 = query.get("dns", [""])[0]
+            if not dns_b64:
+                self.send_response(400)
+                self.end_headers()
+                return
+
+            padding = "=" * ((4 - len(dns_b64) % 4) % 4)
+            try:
+                query_data = base64.urlsafe_b64decode(dns_b64 + padding)
+            except Exception:
+                self.send_response(400)
+                self.end_headers()
+                return
+
+            client_ip = self.headers.get("X-Forwarded-For", self.address_string()).split(",")[0].strip()
+            import dns_proxy
+            response_data = dns_proxy.process_dns_packet(query_data, client_ip)
+            if response_data is None:
+                self.send_response(502)
+                self.end_headers()
+                return
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/dns-message")
+            self.send_header("Content-Length", str(len(response_data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(response_data)
+            return
 
         # 1. API Endpoints
         if path == "/api/check":
