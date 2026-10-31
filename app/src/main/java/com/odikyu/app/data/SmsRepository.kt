@@ -11,18 +11,29 @@ data class SmsEntry(
     val body: String,
     val timestamp: Long,
     val isOutgoing: Boolean,
+    val providerId: Long? = null,
 )
 
-/** In-memory inbox shared between the receiver and the UI. */
+/** In-memory inbox shared between the receiver and the UI (provider is the source of truth). */
 object SmsRepository {
 
-    private const val MAX_ENTRIES = 200
+    private const val MAX_ENTRIES = 500
 
     private val _messages = MutableStateFlow<List<SmsEntry>>(emptyList())
     val messages: StateFlow<List<SmsEntry>> = _messages.asStateFlow()
 
     fun add(entry: SmsEntry) {
-        _messages.update { current -> (current + entry).takeLast(MAX_ENTRIES) }
+        _messages.update { current ->
+            // Avoid duplicates when the same message arrives from provider sync and broadcast.
+            val duplicate = entry.providerId != null &&
+                current.any { it.providerId == entry.providerId }
+            if (duplicate) current else (current + entry).takeLast(MAX_ENTRIES)
+        }
+    }
+
+    /** Replaces the visible list with the full conversation history from the provider. */
+    fun replaceAll(entries: List<SmsEntry>) {
+        _messages.update { entries.takeLast(MAX_ENTRIES) }
     }
 
     fun clear() {
