@@ -1,0 +1,69 @@
+package com.odikyu.app.ui.navigation
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.odikyu.app.ui.screens.DnsScreen
+import com.odikyu.app.ui.screens.MessagesScreen
+
+enum class OdikyuTab(
+    val title: String,
+    val filledIcon: ImageVector,
+    val outlinedIcon: ImageVector,
+) {
+    Messages("Messages", Icons.Filled.Email, Icons.Outlined.Email),
+    Protection("Protection", Icons.Filled.Lock, Icons.Outlined.Lock),
+}
+
+@Composable
+fun OdikyuApp(modifier: Modifier = Modifier) {
+    var currentTab by rememberSaveable { mutableStateOf(OdikyuTab.Messages) }
+
+    Scaffold(modifier = modifier) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                when (currentTab) {
+                    OdikyuTab.Messages -> MessagesScreen()
+                    OdikyuTab.Protection -> DnsScreen()
+                }
+            }
+
+            NavigationBar {
+                OdikyuTab.entries.forEach { tab ->
+                    NavigationBarItem(
+                        selected = currentTab == tab,
+                        onClick = { currentTab = tab },
+                        icon = {
+                            Icon(
+                                imageVector = if (currentTab == tab) tab.filledIcon else tab.outlinedIcon,
+                                contentDescription = tab.title,
+                            )
+                        },
+                        label = { Text(tab.title) },
+                    )
+                }
+            }
+        }
+    }
+}
