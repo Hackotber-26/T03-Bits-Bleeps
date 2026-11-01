@@ -358,27 +358,36 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
     <title>Odikyu DNS Shield | Threat Intelligence & Proxy Control</title>
     <style>
         :root {{
-            --bg-dark: #0a0e17;
-            --bg-panel: #111726;
-            --border-color: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-cyan: #06b6d4;
-            --accent-blue: #3b82f6;
-            --success-green: #10b981;
-            --danger-red: #ef4444;
-            --warn-amber: #f59e0b;
+            --bg-body: #09090b;
+            --bg-card: #121215;
+            --bg-subtle: #18181b;
+            --border-default: #27272a;
+            --border-subtle: #1f1f23;
+            --border-strong: #3f3f46;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --badge-block-bg: #1c1917;
+            --badge-block-text: #f87171;
+            --badge-block-border: #44403c;
+            --badge-caution-bg: #1c1917;
+            --badge-caution-text: #fbbf24;
+            --badge-caution-border: #44403c;
+            --badge-allow-bg: #18181b;
+            --badge-allow-text: #4ade80;
+            --badge-allow-border: #27272a;
         }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #080c14;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-body);
             color: var(--text-primary);
-            padding: 30px 20px;
+            padding: 32px 24px;
             min-height: 100vh;
+            line-height: 1.5;
         }}
         .wrap {{
-            max-width: 1100px;
+            max-width: 1080px;
             margin: 0 auto;
         }}
         .header {{
@@ -386,167 +395,245 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
             justify-content: space-between;
             align-items: center;
             padding-bottom: 24px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-default);
             margin-bottom: 28px;
             flex-wrap: wrap;
             gap: 16px;
         }}
         .header h1 {{
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             gap: 10px;
         }}
+        .header p {{
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 4px;
+        }}
+        .header code {{
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }}
         .status-pill {{
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success-green);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-default);
             padding: 6px 14px;
             border-radius: 9999px;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }}
         .status-dot {{
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
-            background: var(--success-green);
-            box-shadow: 0 0 8px var(--success-green);
+            background: #22c55e;
+            box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
         }}
         .stats-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 18px;
-            margin-bottom: 28px;
+            gap: 16px;
+            margin-bottom: 24px;
         }}
         .stat-box {{
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 10px;
+            padding: 18px 20px;
         }}
         .stat-box .title {{
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
+            letter-spacing: 0.6px;
+            color: var(--text-muted);
             margin-bottom: 8px;
+            font-weight: 500;
         }}
         .stat-box .num {{
-            font-size: 28px;
-            font-weight: 700;
-            color: #ffffff;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
         }}
         .card {{
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-default);
+            border-radius: 12px;
+            padding: 22px 24px;
+            margin-bottom: 24px;
         }}
         .card h2 {{
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 16px;
-            color: #ffffff;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            letter-spacing: -0.2px;
+        }}
+        .card p {{
+            color: var(--text-secondary);
+            font-size: 13px;
+        }}
+        .doh-bar {{
+            background: var(--bg-body);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-default);
+            margin: 14px 0 12px 0;
+            flex-wrap: wrap;
+            gap: 10px;
         }}
         .input-group {{
             display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
+            gap: 10px;
+            margin: 16px 0;
+            flex-wrap: wrap;
         }}
         .input-group input {{
             flex: 1;
-            padding: 12px 16px;
-            background: #0a0e17;
-            border: 1px solid #273549;
+            min-width: 260px;
+            padding: 10px 14px;
+            background: var(--bg-body);
+            border: 1px solid var(--border-default);
             border-radius: 8px;
-            color: #fff;
-            font-size: 14px;
+            color: var(--text-primary);
+            font-size: 13px;
             outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }}
         .input-group input:focus {{
-            border-color: var(--accent-cyan);
+            border-color: var(--border-strong);
+            box-shadow: 0 0 0 1px var(--border-strong);
         }}
         .btn {{
-            padding: 12px 20px;
-            background: var(--accent-cyan);
-            color: #05131f;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }}
-        .btn:hover {{
-            background: #22d3ee;
+        .btn-primary {{
+            background: #f4f4f5;
+            color: #09090b;
+            border: 1px solid #e4e4e7;
         }}
-        .btn-inspect {{
-            background: #8b5cf6;
-            color: #ffffff;
+        .btn-primary:hover {{
+            background: #e4e4e7;
         }}
-        .btn-inspect:hover {{
-            background: #a78bfa;
+        .btn-secondary {{
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+        }}
+        .btn-secondary:hover {{
+            background: #27272a;
+            border-color: var(--border-strong);
+        }}
+        .btn-copy {{
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+        }}
+        .btn-copy:hover {{
+            background: #27272a;
+            border-color: var(--border-strong);
         }}
         #checkResult {{
-            margin-top: 16px;
-            padding: 16px;
+            margin-top: 14px;
+            padding: 14px 16px;
             border-radius: 8px;
-            background: #090e17;
-            border: 1px solid #1f2c3f;
-            font-family: monospace;
-            font-size: 13px;
+            background: var(--bg-body);
+            border: 1px solid var(--border-default);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
             white-space: pre-wrap;
+            color: var(--text-secondary);
             display: none;
         }}
         table {{
             width: 100%;
             border-collapse: collapse;
             font-size: 13px;
-            margin-top: 12px;
+            margin-top: 14px;
         }}
         th, td {{
-            padding: 12px;
+            padding: 12px 14px;
             text-align: left;
-            border-bottom: 1px solid #1a2333;
+            border-bottom: 1px solid var(--border-subtle);
         }}
         th {{
-            color: var(--text-secondary);
-            font-weight: 600;
+            color: var(--text-muted);
+            font-weight: 500;
             text-transform: uppercase;
             font-size: 11px;
             letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-default);
         }}
-        tr:hover {{
-            background: rgba(255, 255, 255, 0.02);
+        tr:hover td {{
+            background: var(--bg-subtle);
         }}
         .badge {{
-            padding: 4px 8px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 500;
+            display: inline-block;
         }}
         .badge-block {{
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger-red);
+            background: var(--badge-block-bg);
+            color: var(--badge-block-text);
+            border: 1px solid var(--badge-block-border);
         }}
         .badge-caution {{
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--warn-amber);
+            background: var(--badge-caution-bg);
+            color: var(--badge-caution-text);
+            border: 1px solid var(--badge-caution-border);
         }}
         .badge-allow {{
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success-green);
+            background: var(--badge-allow-bg);
+            color: var(--badge-allow-text);
+            border: 1px solid var(--badge-allow-border);
+        }}
+        .setup-guide {{
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }}
+        .setup-guide strong {{
+            color: var(--text-secondary);
         }}
         .footer {{
             text-align: center;
             font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 40px;
+            color: var(--text-muted);
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-subtle);
         }}
     </style>
 </head>
@@ -555,47 +642,43 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
         <div class="header">
             <div>
                 <h1>🛡️ Odikyu DNS Shield</h1>
-                <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">
-                    Enterprise Phishing & Malware Protection &bull; Server Host: <code>{server_host}</code>
-                </p>
+                <p>Enterprise Phishing & Malware Protection &bull; Server Host: <code>{server_host}</code></p>
             </div>
             <div class="status-pill">
                 <span class="status-dot"></span>
-                DNS Filtering Active & Protecting
+                Filtering Active
             </div>
         </div>
 
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="title">Known Threat Domains</div>
-                <div class="num" style="color: var(--accent-cyan);">{total_threats:,}</div>
+                <div class="num">{total_threats:,}</div>
             </div>
             <div class="stat-box">
                 <div class="title">Blocked Queries</div>
-                <div class="num" style="color: var(--danger-red);">{total_blocked:,}</div>
+                <div class="num">{total_blocked:,}</div>
             </div>
             <div class="stat-box">
                 <div class="title">AI Inspection Engine</div>
-                <div class="num" style="font-size: 20px; color: #a78bfa;">{gemma_model}</div>
+                <div class="num" style="font-size: 18px; font-weight: 500;">{gemma_model}</div>
             </div>
             <div class="stat-box">
                 <div class="title">Upstream Resolver</div>
-                <div class="num" style="font-size: 18px; color: #60a5fa;">RFC 8484 DoH</div>
+                <div class="num" style="font-size: 18px; font-weight: 500;">RFC 8484 DoH</div>
             </div>
         </div>
 
-        <div class="card" style="border: 1px solid var(--accent-cyan); background: linear-gradient(180deg, #131c2e 0%, var(--bg-panel) 100%);">
-            <h2 style="color: var(--accent-cyan); display: flex; align-items: center; gap: 8px;">
-                ⚡ Live DNS-over-HTTPS (DoH) Endpoint
-            </h2>
-            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
-                Odikyu DNS Shield is fully deployed as a secure <strong>RFC 8484 DNS-over-HTTPS (DoH) proxy</strong>. Enter this endpoint into Chrome, Edge, Firefox, or Android to encrypt all DNS queries and block scams globally:
+        <div class="card">
+            <h2>Live DNS-over-HTTPS (DoH) Endpoint</h2>
+            <p>
+                Odikyu DNS Shield is deployed as a secure <strong>RFC 8484 DNS-over-HTTPS (DoH) proxy</strong>. Use this endpoint in your browser, phone, or router to encrypt and filter all DNS traffic:
             </p>
-            <div style="background: #080c14; padding: 12px 16px; border-radius: 8px; font-family: monospace; font-size: 15px; color: #22d3ee; display: flex; justify-content: space-between; align-items: center; border: 1px solid #1e293b; margin-bottom: 14px;">
+            <div class="doh-bar">
                 <span id="dohUrl">https://{server_host}/dns-query</span>
-                <button class="btn" style="padding: 8px 16px; font-size: 12px;" onclick="navigator.clipboard.writeText(document.getElementById('dohUrl').innerText); alert('Copied DoH URL to clipboard!');">Copy URL</button>
+                <button class="btn btn-copy" onclick="navigator.clipboard.writeText(document.getElementById('dohUrl').innerText); alert('Copied DoH URL to clipboard!');">Copy URL</button>
             </div>
-            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+            <div class="setup-guide">
                 <strong>Quick Setup:</strong><br>
                 &bull; <strong>Chrome / Brave:</strong> Settings &rarr; Privacy & security &rarr; Use secure DNS &rarr; Custom &rarr; Paste URL.<br>
                 &bull; <strong>Edge:</strong> Settings &rarr; Privacy, search & services &rarr; Use secure DNS &rarr; Choose provider &rarr; Paste URL.<br>
@@ -605,20 +688,20 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="card">
-            <h2>🔍 Threat Intelligence & AI Inspection Console</h2>
-            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 14px;">
+            <h2>Threat Intelligence & AI Inspection Console</h2>
+            <p>
                 Test any domain against the local threat database or trigger a multimodal visual and network telemetry inspection using Gemma AI.
             </p>
             <div class="input-group">
                 <input type="text" id="domainInput" placeholder="Enter domain (e.g. secure-paypal-verify.xyz)" />
-                <button class="btn" onclick="checkDomain()">Instant DB Check</button>
-                <button class="btn btn-inspect" onclick="inspectWithAI()">Gemma AI Inspect</button>
+                <button class="btn btn-primary" onclick="checkDomain()">Instant DB Check</button>
+                <button class="btn btn-secondary" onclick="inspectWithAI()">Gemma AI Inspect</button>
             </div>
             <div id="checkResult"></div>
         </div>
 
         <div class="card">
-            <h2>📋 Recent Security Audit Events</h2>
+            <h2>Recent Security Audit Events</h2>
             <table>
                 <thead>
                     <tr>
@@ -637,7 +720,7 @@ DASHBOARD_TEMPLATE = """<!DOCTYPE html>
         </div>
 
         <div class="footer">
-            Odikyu DNS Shield &bull; Hosted at <strong>dns.odikyu.tech</strong> &bull; Powered by PhishTank, OpenPhish & Gemma-4-31b-it
+            Odikyu DNS Shield &bull; Hosted at <code>dns.odikyu.tech</code> &bull; Powered by PhishTank, OpenPhish & Gemma-4-31b-it
         </div>
     </div>
 
@@ -909,16 +992,16 @@ class OdikyuBlockPageHandler(http.server.BaseHTTPRequestHandler):
             src = html.escape(str(log.get("source", "") or "HeuristicEngine"))
             rows.append(f"""
                 <tr>
-                    <td style="color: #94a3b8; font-family: monospace;">{ts}</td>
-                    <td style="font-family: monospace;">{ip}</td>
-                    <td style="font-weight: 600; color: #fff;">{d}</td>
+                    <td style="color: #71717a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px;">{ts}</td>
+                    <td style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; color: #a1a1aa; font-size: 12px;">{ip}</td>
+                    <td style="font-weight: 500; color: #f4f4f5;">{d}</td>
                     <td><span class="badge {badge_cls}">{html.escape(act)}</span></td>
-                    <td style="font-weight: 700;">{score}</td>
-                    <td>{src}</td>
+                    <td style="font-weight: 600; color: #f4f4f5;">{score}</td>
+                    <td style="color: #a1a1aa;">{src}</td>
                 </tr>
             """)
 
-        recent_rows_html = "".join(rows) if rows else "<tr><td colspan='6' style='text-align: center; color: #94a3b8;'>No security events recorded yet.</td></tr>"
+        recent_rows_html = "".join(rows) if rows else "<tr><td colspan='6' style='text-align: center; color: #71717a; padding: 20px 0;'>No security events recorded yet.</td></tr>"
 
         page = DASHBOARD_TEMPLATE.format(
             server_host=html.escape(config.SERVER_HOSTNAME),
